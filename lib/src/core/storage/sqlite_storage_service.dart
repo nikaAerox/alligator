@@ -5,6 +5,7 @@ import 'package:sqflite/sqflite.dart';
 
 import '../models/health_record.dart';
 import '../models/medication.dart';
+import '../models/medication_history.dart';
 import '../models/medication_schedule.dart';
 import '../models/patient.dart';
 import 'app_storage_service.dart';
@@ -14,16 +15,18 @@ class SqliteStorageService implements AppStorageService {
     this._database,
     this._medications,
     this._schedules,
+    this._histories,
     this._healthRecords,
     this._patients,
     this._currentPatientId,
   );
 
   static const _databaseName = 'medicare.db';
-  static const _databaseVersion = 2;
+  static const _databaseVersion = 3;
 
   static const _medicationsTable = 'medications';
   static const _schedulesTable = 'medication_schedules';
+  static const _historiesTable = 'medication_histories';
   static const _healthRecordsTable = 'health_records';
   static const _patientsTable = 'patients';
   static const _settingsTable = 'app_settings';
@@ -31,6 +34,7 @@ class SqliteStorageService implements AppStorageService {
   final Database _database;
   List<Medication> _medications;
   List<MedicationSchedule> _schedules;
+  List<MedicationHistory> _histories;
   List<HealthRecord> _healthRecords;
   List<Patient> _patients;
   String? _currentPatientId;
@@ -44,7 +48,7 @@ class SqliteStorageService implements AppStorageService {
       onUpgrade: _upgradeSchema,
     );
 
-    final service = SqliteStorageService._(database, [], [], [], [], null);
+    final service = SqliteStorageService._(database, [], [], [], [], [], null);
     await service._loadCache();
     return service;
   }
@@ -80,6 +84,8 @@ class SqliteStorageService implements AppStorageService {
       )
     ''');
 
+    await _createHistorySchema(db);
+
     await db.execute('''
       CREATE TABLE $_healthRecordsTable (
         id TEXT PRIMARY KEY,
@@ -100,6 +106,23 @@ class SqliteStorageService implements AppStorageService {
     if (oldVersion < 2) {
       await _createPatientSchema(db);
     }
+    if (oldVersion < 3) {
+      await _createHistorySchema(db);
+    }
+  }
+
+  static Future<void> _createHistorySchema(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS $_historiesTable (
+        id TEXT PRIMARY KEY,
+        medicationId TEXT NOT NULL,
+        scheduleId TEXT NOT NULL,
+        medicationName TEXT NOT NULL,
+        dosage TEXT NOT NULL,
+        status TEXT NOT NULL,
+        actionAt TEXT NOT NULL
+      )
+    ''');
   }
 
   static Future<void> _createPatientSchema(Database db) async {
@@ -124,6 +147,7 @@ class SqliteStorageService implements AppStorageService {
   Future<void> _loadCache() async {
     final medicationRows = await _database.query(_medicationsTable);
     final scheduleRows = await _database.query(_schedulesTable);
+    final historyRows = await _database.query(_historiesTable);
     final healthRows = await _database.query(_healthRecordsTable);
     final patientRows = await _database.query(_patientsTable);
     final settingRows = await _database.query(
@@ -135,6 +159,7 @@ class SqliteStorageService implements AppStorageService {
 
     _medications = medicationRows.map(_medicationFromRow).toList();
     _schedules = scheduleRows.map(_scheduleFromRow).toList();
+    _histories = historyRows.map(_historyFromRow).toList();
     _healthRecords = healthRows.map(_healthRecordFromRow).toList();
     _patients = patientRows.map(_patientFromRow).toList();
     _currentPatientId = settingRows.isEmpty
@@ -160,6 +185,11 @@ class SqliteStorageService implements AppStorageService {
   @override
   List<MedicationSchedule>? loadSchedules() {
     return _schedules.isEmpty ? null : List.unmodifiable(_schedules);
+  }
+
+  @override
+  List<MedicationHistory>? loadMedicationHistories() {
+    return _histories.isEmpty ? null : List.unmodifiable(_histories);
   }
 
   @override
@@ -231,6 +261,23 @@ class SqliteStorageService implements AppStorageService {
   }
 
   @override
+  Future<void> saveMedicationHistories(
+    List<MedicationHistory> histories,
+  ) async {
+    _histories = List.of(histories);
+    await _database.transaction((txn) async {
+      await txn.delete(_historiesTable);
+      for (final history in histories) {
+        await txn.insert(
+          _historiesTable,
+          _historyToRow(history),
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+    });
+  }
+
+  @override
   Future<void> saveHealthRecords(List<HealthRecord> records) async {
     _healthRecords = List.of(records);
     await _database.transaction((txn) async {
@@ -294,6 +341,30 @@ class SqliteStorageService implements AppStorageService {
       timeInMinutes: row['timeInMinutes']! as int,
       status: MedicationStatus.values.byName(row['status']! as String),
       createdAt: DateTime.parse(row['createdAt']! as String),
+    );
+  }
+
+  Map<String, Object?> _historyToRow(MedicationHistory history) {
+    return {
+      'id': history.id,
+      'medicationId': history.medicationId,
+      'scheduleId': history.scheduleId,
+      'medicationName': history.medicationName,
+      'dosage': history.dosage,
+      'status': history.status.name,
+      'actionAt': history.actionAt.toIso8601String(),
+    };
+  }
+
+  MedicationHistory _historyFromRow(Map<String, Object?> row) {
+    return MedicationHistory(
+      id: row['id']! as String,
+      medicationId: row['medicationId']! as String,
+      scheduleId: row['scheduleId']! as String,
+      medicationName: row['medicationName']! as String,
+      dosage: row['dosage']! as String,
+      status: MedicationStatus.values.byName(row['status']! as String),
+      actionAt: DateTime.parse(row['actionAt']! as String),
     );
   }
 

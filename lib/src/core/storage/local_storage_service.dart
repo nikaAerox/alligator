@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/health_record.dart';
 import '../models/medication.dart';
+import '../models/medication_history.dart';
 import '../models/medication_schedule.dart';
 import '../models/patient.dart';
 import 'app_storage_service.dart';
@@ -13,6 +14,7 @@ class LocalStorageService implements AppStorageService {
 
   static const _medicationsKey = 'medications';
   static const _schedulesKey = 'medication_schedules';
+  static const _historiesKey = 'medication_histories';
   static const _healthRecordsKey = 'health_records';
   static const _patientsKey = 'patients';
   static const _currentPatientIdKey = 'current_patient_id';
@@ -70,6 +72,23 @@ class LocalStorageService implements AppStorageService {
   }
 
   @override
+  List<MedicationHistory>? loadMedicationHistories() {
+    final source = _preferences.getString(_historiesKey);
+    if (source == null) {
+      return null;
+    }
+
+    final decoded = jsonDecode(source) as List<dynamic>;
+    return decoded
+        .map(
+          (item) => MedicationHistory.fromJson(
+            Map<String, dynamic>.from(item as Map),
+          ),
+        )
+        .toList();
+  }
+
+  @override
   List<HealthRecord>? loadHealthRecords() {
     final source = _preferences.getString(_healthRecordsKey);
     if (source == null) {
@@ -115,6 +134,14 @@ class LocalStorageService implements AppStorageService {
       schedules.map((schedule) => schedule.toJson()).toList(),
     );
     return _preferences.setString(_schedulesKey, encoded);
+  }
+
+  @override
+  Future<void> saveMedicationHistories(List<MedicationHistory> histories) {
+    final encoded = jsonEncode(
+      histories.map((history) => history.toJson()).toList(),
+    );
+    return _preferences.setString(_historiesKey, encoded);
   }
 
   @override

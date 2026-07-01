@@ -1,18 +1,28 @@
 import 'package:flutter/foundation.dart';
 
 import '../models/medication.dart';
+import '../models/medication_history.dart';
 import '../models/medication_schedule.dart';
+import '../notifications/notification_service.dart';
 import '../storage/app_storage_service.dart';
 
 class MedicationStore extends ChangeNotifier {
   MedicationStore({
     List<Medication>? initialMedications,
     List<MedicationSchedule>? initialSchedules,
+    List<MedicationHistory>? initialHistories,
     this._storage,
+    this._notifications,
   }) : _medications = List.of(initialMedications ?? const []),
-       _schedules = List.of(initialSchedules ?? const []);
+       _schedules = List.of(initialSchedules ?? const []),
+       _histories = List.of(initialHistories ?? const []) {
+    _restorePendingNotifications();
+  }
 
-  factory MedicationStore.seeded({AppStorageService? storage}) {
+  factory MedicationStore.seeded({
+    AppStorageService? storage,
+    NotificationService? notifications,
+  }) {
     final now = DateTime.now();
 
     const metforminId = 'med-1';
@@ -21,6 +31,7 @@ class MedicationStore extends ChangeNotifier {
 
     return MedicationStore(
       storage: storage,
+      notifications: notifications,
       initialMedications:
           storage?.loadMedications() ??
           [
@@ -83,14 +94,23 @@ class MedicationStore extends ChangeNotifier {
               createdAt: now,
             ),
           ],
+      initialHistories: storage?.loadMedicationHistories(),
     );
   }
 
   final List<Medication> _medications;
   final List<MedicationSchedule> _schedules;
+  final List<MedicationHistory> _histories;
   final AppStorageService? _storage;
+  final NotificationService? _notifications;
 
   List<Medication> get medications => List.unmodifiable(_medications);
+
+  List<MedicationHistory> get medicationHistories {
+    final items = List<MedicationHistory>.from(_histories)
+      ..sort((a, b) => b.actionAt.compareTo(a.actionAt));
+    return List.unmodifiable(items);
+  }
 
   List<ScheduledMedication> get scheduledMedications {
     final items = <ScheduledMedication>[];
@@ -160,21 +180,22 @@ class MedicationStore extends ChangeNotifier {
   void deleteMedication(String id) {
     _medications.removeWhere((medication) => medication.id == id);
     _schedules.removeWhere((schedule) => schedule.medicationId == id);
+    _histories.removeWhere((history) => history.medicationId == id);
     _saveMedicationData();
     notifyListeners();
   }
 
   void addSchedule({required String medicationId, required int timeInMinutes}) {
-    _schedules.add(
-      MedicationSchedule(
-        id: 'schedule-${DateTime.now().microsecondsSinceEpoch}',
-        medicationId: medicationId,
-        timeInMinutes: timeInMinutes,
-        status: MedicationStatus.pending,
-        createdAt: DateTime.now(),
-      ),
+    final schedule = MedicationSchedule(
+      id: 'schedule-${DateTime.now().microsecondsSinceEpoch}',
+      medicationId: medicationId,
+      timeInMinutes: timeInMinutes,
+      status: MedicationStatus.pending,
+      createdAt: DateTime.now(),
     );
+    _schedules.add(schedule);
     _storage?.saveSchedules(_schedules);
+    _scheduleNotification(schedule);
     notifyListeners();
   }
 
@@ -184,20 +205,34 @@ class MedicationStore extends ChangeNotifier {
       return;
     }
 
-    _schedules[index] = _schedules[index].copyWith(status: status);
+    final updatedSchedule = _schedules[index].copyWith(status: status);
+    _schedules[index] = updatedSchedule;
+    if (status != MedicationStatus.pending) {
+      _addHistory(updatedSchedule, status);
+    }
     _storage?.saveSchedules(_schedules);
+    _storage?.saveMedicationHistories(_histories);
+    if (status == MedicationStatus.pending) {
+      _scheduleNotification(_schedules[index]);
+    } else {
+      _notifications?.cancelMedicationReminder(scheduleId);
+    }
     notifyListeners();
   }
 
   void deleteSchedule(String scheduleId) {
     _schedules.removeWhere((schedule) => schedule.id == scheduleId);
+    _histories.removeWhere((history) => history.scheduleId == scheduleId);
     _storage?.saveSchedules(_schedules);
+    _storage?.saveMedicationHistories(_histories);
+    _notifications?.cancelMedicationReminder(scheduleId);
     notifyListeners();
   }
 
   void _saveMedicationData() {
     _storage?.saveMedications(_medications);
     _storage?.saveSchedules(_schedules);
+    _storage?.saveMedicationHistories(_histories);
   }
 
   Medication? _findMedication(String id) {
@@ -207,5 +242,47 @@ class MedicationStore extends ChangeNotifier {
       }
     }
     return null;
+  }
+
+  void _scheduleNotification(MedicationSchedule schedule) {
+    final medication = _findMedication(schedule.medicationId);
+    if (medication == null || !medication.isActive) {
+      return;
+    }
+
+    _notifications?.scheduleMedicationReminder(
+      scheduleId: schedule.id,
+      medicationName: medication.name,
+      dosage: medication.dosage,
+      timeInMinutes: schedule.timeInMinutes,
+    );
+  }
+
+  void _restorePendingNotifications() {
+    for (final schedule in _schedules) {
+      if (schedule.status == MedicationStatus.pending) {
+        _scheduleNotification(schedule);
+      }
+    }
+  }
+
+  void _addHistory(MedicationSchedule schedule, MedicationStatus status) {
+    final medication = _findMedication(schedule.medicationId);
+    if (medication == null) {
+      return;
+    }
+
+    _histories.insert(
+      0,
+      MedicationHistory(
+        id: 'history-${DateTime.now().microsecondsSinceEpoch}',
+        medicationId: medication.id,
+        scheduleId: schedule.id,
+        medicationName: medication.name,
+        dosage: medication.dosage,
+        status: status,
+        actionAt: DateTime.now(),
+      ),
+    );
   }
 }
