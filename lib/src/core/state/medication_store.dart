@@ -182,9 +182,7 @@ class MedicationStore extends ChangeNotifier {
 
   void deleteSchedule(String scheduleId) {
     _schedules.removeWhere((schedule) => schedule.id == scheduleId);
-    _histories.removeWhere((history) => history.scheduleId == scheduleId);
     _storage?.saveSchedules(_schedules);
-    _storage?.saveMedicationHistories(_histories);
     _notifications?.cancelMedicationReminder(scheduleId);
     notifyListeners();
   }

@@ -377,35 +377,111 @@ class _NextDoseCard extends StatelessWidget {
               title: Text('Next Reminder'),
               subtitle: Text('No pending medication reminders'),
             )
-          : ListTile(
-              leading: const CircleAvatar(
-                backgroundColor: Color(0xFFFFF2D4),
-                child: Icon(
-                  Icons.notifications_active,
-                  color: Color(0xFF9A6A00),
-                ),
-              ),
-              title: const Text('Next Reminder'),
-              subtitle: Text(
-                '${next.medication.name} - ${next.schedule.displayTime}',
-              ),
-              trailing: PressableScale(
-                child: FilledButton(
-                  onPressed: () {
-                    context.read<MedicationStore>().updateScheduleStatus(
-                      next.schedule.id,
-                      MedicationStatus.taken,
-                    );
-                  },
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size(82, 40),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          : Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const CircleAvatar(
+                        backgroundColor: Color(0xFFFFF2D4),
+                        child: Icon(
+                          Icons.notifications_active,
+                          color: Color(0xFF9A6A00),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Next Reminder',
+                              style: TextStyle(fontWeight: FontWeight.w800),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${next.medication.name} - ${next.schedule.displayTime}',
+                            ),
+                            Text(
+                              next.medication.dosage,
+                              style: const TextStyle(color: Color(0xFF627174)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  child: const Text('Taken'),
-                ),
+                  const SizedBox(height: 14),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _ReminderActionButton(
+                        label: 'Taken',
+                        icon: Icons.check_circle_outline,
+                        onPressed: () {
+                          context.read<MedicationStore>().updateScheduleStatus(
+                            next.schedule.id,
+                            MedicationStatus.taken,
+                          );
+                        },
+                      ),
+                      _ReminderActionButton(
+                        label: 'Postpone',
+                        icon: Icons.snooze_outlined,
+                        onPressed: () {
+                          context.read<MedicationStore>().updateScheduleStatus(
+                            next.schedule.id,
+                            MedicationStatus.postponed,
+                          );
+                        },
+                      ),
+                      _ReminderActionButton(
+                        label: 'Missed',
+                        icon: Icons.cancel_outlined,
+                        onPressed: () {
+                          context.read<MedicationStore>().updateScheduleStatus(
+                            next.schedule.id,
+                            MedicationStatus.missed,
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
+    );
+  }
+}
+
+class _ReminderActionButton extends StatelessWidget {
+  const _ReminderActionButton({
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return PressableScale(
+      child: FilledButton.icon(
+        onPressed: onPressed,
+        style: FilledButton.styleFrom(
+          minimumSize: const Size(104, 40),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+        icon: Icon(icon, size: 18),
+        label: Text(label),
+      ),
     );
   }
 }
@@ -614,12 +690,24 @@ class _MedicationHistoryReport extends StatelessWidget {
               const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  _LegendItem(color: Color(0xFF176C8C), label: 'Taken'),
-                  SizedBox(width: 14),
-                  _LegendItem(color: AppTheme.danger, label: 'Missed'),
-                  SizedBox(width: 14),
-                  _LegendItem(color: AppTheme.success, label: 'Postponed'),
+                children: [
+                  _LegendItem(
+                    color: Color(0xFF176C8C),
+                    label: 'Taken',
+                    count: taken,
+                  ),
+                  const SizedBox(width: 14),
+                  _LegendItem(
+                    color: AppTheme.danger,
+                    label: 'Missed',
+                    count: missed,
+                  ),
+                  const SizedBox(width: 14),
+                  _LegendItem(
+                    color: AppTheme.success,
+                    label: 'Postponed',
+                    count: postponed,
+                  ),
                 ],
               ),
               const SizedBox(height: 14),
@@ -688,10 +776,15 @@ class _HistoryDonutPainter extends CustomPainter {
 }
 
 class _LegendItem extends StatelessWidget {
-  const _LegendItem({required this.color, required this.label});
+  const _LegendItem({
+    required this.color,
+    required this.label,
+    required this.count,
+  });
 
   final Color color;
   final String label;
+  final int count;
 
   @override
   Widget build(BuildContext context) {
@@ -704,7 +797,7 @@ class _LegendItem extends StatelessWidget {
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 5),
-        Text(label, style: const TextStyle(fontSize: 12)),
+        Text('$label: $count', style: const TextStyle(fontSize: 12)),
       ],
     );
   }

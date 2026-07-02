@@ -100,21 +100,6 @@ class _ScheduleCard extends StatelessWidget {
             onSelected: (action) {
               final store = context.read<MedicationStore>();
               switch (action) {
-                case _ScheduleAction.taken:
-                  store.updateScheduleStatus(
-                    schedule.id,
-                    MedicationStatus.taken,
-                  );
-                case _ScheduleAction.missed:
-                  store.updateScheduleStatus(
-                    schedule.id,
-                    MedicationStatus.missed,
-                  );
-                case _ScheduleAction.postponed:
-                  store.updateScheduleStatus(
-                    schedule.id,
-                    MedicationStatus.postponed,
-                  );
                 case _ScheduleAction.pending:
                   store.updateScheduleStatus(
                     schedule.id,
@@ -125,18 +110,6 @@ class _ScheduleCard extends StatelessWidget {
               }
             },
             itemBuilder: (context) => const [
-              PopupMenuItem(
-                value: _ScheduleAction.taken,
-                child: _ScheduleMenuPill(label: 'Mark taken'),
-              ),
-              PopupMenuItem(
-                value: _ScheduleAction.missed,
-                child: _ScheduleMenuPill(label: 'Mark missed'),
-              ),
-              PopupMenuItem(
-                value: _ScheduleAction.postponed,
-                child: _ScheduleMenuPill(label: 'Postpone'),
-              ),
               PopupMenuItem(
                 value: _ScheduleAction.pending,
                 child: _ScheduleMenuPill(label: 'Set pending'),
@@ -325,4 +298,4 @@ class _ScheduleFormSheetState extends State<ScheduleFormSheet> {
   }
 }
 
-enum _ScheduleAction { taken, missed, postponed, pending, delete }
+enum _ScheduleAction { pending, delete }
