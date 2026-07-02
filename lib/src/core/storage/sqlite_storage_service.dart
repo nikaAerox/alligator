@@ -22,7 +22,7 @@ class SqliteStorageService implements AppStorageService {
   );
 
   static const _databaseName = 'medicare.db';
-  static const _databaseVersion = 3;
+  static const _databaseVersion = 4;
 
   static const _medicationsTable = 'medications';
   static const _schedulesTable = 'medication_schedules';
@@ -59,6 +59,7 @@ class SqliteStorageService implements AppStorageService {
     await db.execute('''
       CREATE TABLE $_medicationsTable (
         id TEXT PRIMARY KEY,
+        patientId TEXT NOT NULL,
         name TEXT NOT NULL,
         dosage TEXT NOT NULL,
         quantity TEXT NOT NULL,
@@ -74,6 +75,7 @@ class SqliteStorageService implements AppStorageService {
     await db.execute('''
       CREATE TABLE $_schedulesTable (
         id TEXT PRIMARY KEY,
+        patientId TEXT NOT NULL,
         medicationId TEXT NOT NULL,
         timeInMinutes INTEGER NOT NULL,
         status TEXT NOT NULL,
@@ -89,6 +91,7 @@ class SqliteStorageService implements AppStorageService {
     await db.execute('''
       CREATE TABLE $_healthRecordsTable (
         id TEXT PRIMARY KEY,
+        patientId TEXT NOT NULL,
         type TEXT NOT NULL,
         value TEXT NOT NULL,
         recordedAt TEXT NOT NULL,
@@ -109,12 +112,31 @@ class SqliteStorageService implements AppStorageService {
     if (oldVersion < 3) {
       await _createHistorySchema(db);
     }
+    if (oldVersion < 4) {
+      await _addColumnIfMissing(db, _medicationsTable, 'patientId TEXT');
+      await _addColumnIfMissing(db, _historiesTable, 'patientId TEXT');
+      await _addColumnIfMissing(db, _healthRecordsTable, 'patientId TEXT');
+    }
+  }
+
+  static Future<void> _addColumnIfMissing(
+    Database db,
+    String table,
+    String columnDefinition,
+  ) async {
+    final columnName = columnDefinition.split(' ').first;
+    final columns = await db.rawQuery('PRAGMA table_info($table)');
+    final exists = columns.any((column) => column['name'] == columnName);
+    if (!exists) {
+      await db.execute('ALTER TABLE $table ADD COLUMN $columnDefinition');
+    }
   }
 
   static Future<void> _createHistorySchema(Database db) async {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS $_historiesTable (
         id TEXT PRIMARY KEY,
+        patientId TEXT NOT NULL,
         medicationId TEXT NOT NULL,
         scheduleId TEXT NOT NULL,
         medicationName TEXT NOT NULL,
@@ -295,6 +317,7 @@ class SqliteStorageService implements AppStorageService {
   Map<String, Object?> _medicationToRow(Medication medication) {
     return {
       'id': medication.id,
+      'patientId': medication.patientId,
       'name': medication.name,
       'dosage': medication.dosage,
       'quantity': medication.quantity,
@@ -310,6 +333,7 @@ class SqliteStorageService implements AppStorageService {
   Medication _medicationFromRow(Map<String, Object?> row) {
     return Medication(
       id: row['id']! as String,
+      patientId: row['patientId'] as String? ?? '',
       name: row['name']! as String,
       dosage: row['dosage']! as String,
       quantity: row['quantity']! as String,
@@ -347,6 +371,7 @@ class SqliteStorageService implements AppStorageService {
   Map<String, Object?> _historyToRow(MedicationHistory history) {
     return {
       'id': history.id,
+      'patientId': history.patientId,
       'medicationId': history.medicationId,
       'scheduleId': history.scheduleId,
       'medicationName': history.medicationName,
@@ -359,6 +384,7 @@ class SqliteStorageService implements AppStorageService {
   MedicationHistory _historyFromRow(Map<String, Object?> row) {
     return MedicationHistory(
       id: row['id']! as String,
+      patientId: row['patientId'] as String? ?? '',
       medicationId: row['medicationId']! as String,
       scheduleId: row['scheduleId']! as String,
       medicationName: row['medicationName']! as String,
@@ -371,6 +397,7 @@ class SqliteStorageService implements AppStorageService {
   Map<String, Object?> _healthRecordToRow(HealthRecord record) {
     return {
       'id': record.id,
+      'patientId': record.patientId,
       'type': record.type.name,
       'value': record.value,
       'recordedAt': record.recordedAt.toIso8601String(),
@@ -382,6 +409,7 @@ class SqliteStorageService implements AppStorageService {
   HealthRecord _healthRecordFromRow(Map<String, Object?> row) {
     return HealthRecord(
       id: row['id']! as String,
+      patientId: row['patientId'] as String? ?? '',
       type: HealthRecordType.values.byName(row['type']! as String),
       value: row['value']! as String,
       recordedAt: DateTime.parse(row['recordedAt']! as String),

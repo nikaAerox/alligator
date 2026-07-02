@@ -21,12 +21,12 @@ class AuthStore extends ChangeNotifier {
 
   bool get isLoggedIn => _currentPatient != null;
 
-  String? register({
+  Future<String?> register({
     required String name,
     required String email,
     required String password,
     required String confirmPassword,
-  }) {
+  }) async {
     final normalizedEmail = email.trim().toLowerCase();
     if (name.trim().isEmpty) {
       return 'Enter your name';
@@ -53,12 +53,15 @@ class AuthStore extends ChangeNotifier {
     );
     _patients.add(patient);
     _currentPatient = patient;
-    _saveAuthData();
+    await _saveAuthData();
     notifyListeners();
     return null;
   }
 
-  String? login({required String email, required String password}) {
+  Future<String?> login({
+    required String email,
+    required String password,
+  }) async {
     final normalizedEmail = email.trim().toLowerCase();
     final patient = _patients.where((item) {
       return item.email == normalizedEmail && item.password == password;
@@ -69,16 +72,16 @@ class AuthStore extends ChangeNotifier {
     }
 
     _currentPatient = patient;
-    _storage?.saveCurrentPatientId(patient.id);
+    await _storage?.saveCurrentPatientId(patient.id);
     notifyListeners();
     return null;
   }
 
-  String? updateProfile({
+  Future<String?> updateProfile({
     required String name,
     required String email,
     String? password,
-  }) {
+  }) async {
     final current = _currentPatient;
     if (current == null) {
       return 'No user is logged in';
@@ -114,14 +117,14 @@ class AuthStore extends ChangeNotifier {
 
     _patients[index] = updated;
     _currentPatient = updated;
-    _saveAuthData();
+    await _saveAuthData();
     notifyListeners();
     return null;
   }
 
-  void logout() {
+  Future<void> logout() async {
     _currentPatient = null;
-    _storage?.saveCurrentPatientId(null);
+    await _storage?.saveCurrentPatientId(null);
     notifyListeners();
   }
 
@@ -134,9 +137,9 @@ class AuthStore extends ChangeNotifier {
     return null;
   }
 
-  void _saveAuthData() {
-    _storage?.savePatients(_patients);
-    _storage?.saveCurrentPatientId(_currentPatient?.id);
+  Future<void> _saveAuthData() async {
+    await _storage?.savePatients(_patients);
+    await _storage?.saveCurrentPatientId(_currentPatient?.id);
   }
 
   bool _isValidEmail(String email) {

@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/models/medication.dart';
 import '../../core/state/medication_store.dart';
+import '../../shared/widgets/pressable_scale.dart';
 import '../../theme/app_theme.dart';
 
 class MedicationScreen extends StatefulWidget {
@@ -18,7 +19,6 @@ class MedicationScreen extends StatefulWidget {
 class _MedicationScreenState extends State<MedicationScreen> {
   final _searchController = TextEditingController();
   String _query = '';
-  bool _isFabPressed = false;
 
   @override
   void dispose() {
@@ -39,56 +39,49 @@ class _MedicationScreenState extends State<MedicationScreen> {
           medication.quantity.toLowerCase().contains(query);
     }).toList();
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Medications')),
-      body: ListView.separated(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 92),
-        itemBuilder: (context, index) {
-          if (index == 0) {
-            return _MedicationSearchBar(
-              controller: _searchController,
-              onChanged: (value) => setState(() => _query = value),
-            );
-          }
+    return Stack(
+      children: [
+        ListView.separated(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 92),
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              return _MedicationSearchBar(
+                controller: _searchController,
+                onChanged: (value) => setState(() => _query = value),
+              );
+            }
 
-          if (filteredMedications.isEmpty) {
-            return _query.trim().isEmpty
-                ? const _EmptyMedicationState()
-                : const _NoSearchResultsState();
-          }
+            if (filteredMedications.isEmpty) {
+              return _query.trim().isEmpty
+                  ? const _EmptyMedicationState()
+                  : const _NoSearchResultsState();
+            }
 
-          return _MedicationCard(medication: filteredMedications[index - 1]);
-        },
-        separatorBuilder: (_, _) => const SizedBox(height: 14),
-        itemCount: filteredMedications.isEmpty
-            ? 2
-            : filteredMedications.length + 1,
-      ),
-      floatingActionButton: AnimatedScale(
-        scale: _isFabPressed ? 0.94 : 1,
-        duration: const Duration(milliseconds: 110),
-        curve: Curves.easeOut,
-        child: FloatingActionButton.extended(
-          onPressed: _handleAddPressed,
-          backgroundColor: const Color(0xFF5D8490),
-          foregroundColor: Colors.white,
-          elevation: 6,
-          extendedPadding: const EdgeInsets.symmetric(horizontal: 24),
-          icon: const Icon(Icons.add),
-          label: const Text('Add'),
+            return _MedicationCard(medication: filteredMedications[index - 1]);
+          },
+          separatorBuilder: (_, _) => const SizedBox(height: 14),
+          itemCount: filteredMedications.isEmpty
+              ? 2
+              : filteredMedications.length + 1,
         ),
-      ),
+        Positioned(
+          right: 16,
+          bottom: 18,
+          child: PressableScale(
+            child: FloatingActionButton.extended(
+              heroTag: 'medication_add_button',
+              onPressed: _handleAddPressed,
+              extendedPadding: const EdgeInsets.symmetric(horizontal: 24),
+              icon: const Icon(Icons.add),
+              label: const Text('Add'),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
   Future<void> _handleAddPressed() async {
-    setState(() => _isFabPressed = true);
-    await Future<void>.delayed(const Duration(milliseconds: 90));
-    if (!mounted) {
-      return;
-    }
-    setState(() => _isFabPressed = false);
-    await Future<void>.delayed(const Duration(milliseconds: 40));
     if (!mounted) {
       return;
     }
@@ -259,14 +252,18 @@ class _MedicationCard extends StatelessWidget {
           title: const Text('Delete medication?'),
           content: Text('${medication.name} will be removed from your list.'),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Cancel'),
+            PressableScale(
+              child: TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('Cancel'),
+              ),
             ),
-            FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              style: FilledButton.styleFrom(backgroundColor: AppTheme.danger),
-              child: const Text('Delete'),
+            PressableScale(
+              child: FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                style: FilledButton.styleFrom(backgroundColor: AppTheme.danger),
+                child: const Text('Delete'),
+              ),
             ),
           ],
         );
@@ -383,7 +380,7 @@ class _MenuPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: const Color(0xFF4D7480),
+      color: AppTheme.button,
       elevation: 3,
       shadowColor: Colors.black26,
       borderRadius: BorderRadius.circular(18),
@@ -630,10 +627,12 @@ class _MedicationFormSheetState extends State<MedicationFormSheet> {
                 ),
               ),
               const SizedBox(height: 22),
-              ElevatedButton.icon(
-                onPressed: _save,
-                icon: Icon(_isEditing ? Icons.save_outlined : Icons.add),
-                label: Text(_isEditing ? 'Save Changes' : 'Add Medication'),
+              PressableScale(
+                child: ElevatedButton.icon(
+                  onPressed: _save,
+                  icon: Icon(_isEditing ? Icons.save_outlined : Icons.add),
+                  label: Text(_isEditing ? 'Save Changes' : 'Add Medication'),
+                ),
               ),
             ],
           ),
@@ -745,21 +744,23 @@ class _ImagePickerPanel extends StatelessWidget {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    FilledButton.icon(
-                      onPressed: onPickImage,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFF5D8490),
-                        foregroundColor: Colors.white,
-                        elevation: 3,
+                    PressableScale(
+                      child: FilledButton.icon(
+                        onPressed: onPickImage,
+                        icon: const Icon(
+                          Icons.photo_library_outlined,
+                          size: 18,
+                        ),
+                        label: Text(imageBytes == null ? 'Choose' : 'Change'),
                       ),
-                      icon: const Icon(Icons.photo_library_outlined, size: 18),
-                      label: Text(imageBytes == null ? 'Choose' : 'Change'),
                     ),
                     if (onRemoveImage != null)
-                      OutlinedButton.icon(
-                        onPressed: onRemoveImage,
-                        icon: const Icon(Icons.delete_outline, size: 18),
-                        label: const Text('Remove'),
+                      PressableScale(
+                        child: OutlinedButton.icon(
+                          onPressed: onRemoveImage,
+                          icon: const Icon(Icons.delete_outline, size: 18),
+                          label: const Text('Remove'),
+                        ),
                       ),
                   ],
                 ),

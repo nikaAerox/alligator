@@ -12,6 +12,7 @@ enum HealthRecordType {
 class HealthRecord {
   const HealthRecord({
     required this.id,
+    required this.patientId,
     required this.type,
     required this.value,
     required this.recordedAt,
@@ -20,6 +21,7 @@ class HealthRecord {
   });
 
   final String id;
+  final String patientId;
   final HealthRecordType type;
   final String value;
   final DateTime recordedAt;
@@ -28,6 +30,7 @@ class HealthRecord {
 
   HealthRecord copyWith({
     String? id,
+    String? patientId,
     HealthRecordType? type,
     String? value,
     DateTime? recordedAt,
@@ -36,6 +39,7 @@ class HealthRecord {
   }) {
     return HealthRecord(
       id: id ?? this.id,
+      patientId: patientId ?? this.patientId,
       type: type ?? this.type,
       value: value ?? this.value,
       recordedAt: recordedAt ?? this.recordedAt,
@@ -47,6 +51,7 @@ class HealthRecord {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'patientId': patientId,
       'type': type.name,
       'value': value,
       'recordedAt': recordedAt.toIso8601String(),
@@ -58,6 +63,7 @@ class HealthRecord {
   factory HealthRecord.fromJson(Map<String, dynamic> json) {
     return HealthRecord(
       id: json['id'] as String,
+      patientId: json['patientId'] as String? ?? '',
       type: HealthRecordType.values.byName(
         json['type'] as String? ?? HealthRecordType.bmi.name,
       ),

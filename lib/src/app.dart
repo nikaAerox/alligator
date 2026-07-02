@@ -6,7 +6,7 @@ import 'core/storage/app_storage_service.dart';
 import 'core/state/auth_store.dart';
 import 'core/state/health_store.dart';
 import 'core/state/medication_store.dart';
-import 'features/auth/login_screen.dart';
+import 'features/welcome/welcome_screen.dart';
 import 'theme/app_theme.dart';
 
 class MedicareApp extends StatelessWidget {
@@ -20,21 +20,29 @@ class MedicareApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthStore(storage: storage)),
-        ChangeNotifierProvider(
+        ChangeNotifierProxyProvider<AuthStore, MedicationStore>(
           create: (_) => MedicationStore.seeded(
             storage: storage,
             notifications: notifications,
           ),
+          update: (_, authStore, medicationStore) {
+            return medicationStore!
+              ..setCurrentPatientId(authStore.currentPatient?.id);
+          },
         ),
-        ChangeNotifierProvider(
+        ChangeNotifierProxyProvider<AuthStore, HealthStore>(
           create: (_) => HealthStore.seeded(storage: storage),
+          update: (_, authStore, healthStore) {
+            return healthStore!
+              ..setCurrentPatientId(authStore.currentPatient?.id);
+          },
         ),
       ],
       child: MaterialApp(
         title: 'MediCare',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
-        home: const LoginScreen(),
+        home: const WelcomeScreen(),
       ),
     );
   }

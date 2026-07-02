@@ -5,10 +5,12 @@ class AppTheme {
 
   static const Color primary = Color(0xFF137A7F);
   static const Color accent = Color(0xFFF2B84B);
+  static const Color neutral = Color(0xFF137A7F);
   static const Color danger = Color(0xFFD9534F);
   static const Color success = Color(0xFF2E9D64);
   static const Color background = Color(0xFFF7FAFA);
   static const Color ink = Color(0xFF172326);
+  static const Color button = Color(0xFF5D8490);
 
   static ThemeData get light {
     final colorScheme = ColorScheme.fromSeed(
@@ -52,11 +54,47 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          minimumSize: const Size.fromHeight(50),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          backgroundColor: primary,
+          elevation: 5,
+          shadowColor: Colors.black26,
+          minimumSize: const Size.fromHeight(52),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+          backgroundColor: button,
           foregroundColor: Colors.white,
-          textStyle: const TextStyle(fontWeight: FontWeight.w700),
+          textStyle: const TextStyle(fontWeight: FontWeight.w900),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          elevation: 5,
+          shadowColor: Colors.black26,
+          minimumSize: const Size.fromHeight(52),
+          backgroundColor: button,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+          textStyle: const TextStyle(fontWeight: FontWeight.w900),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size.fromHeight(52),
+          foregroundColor: button,
+          side: const BorderSide(color: button, width: 1.5),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+          textStyle: const TextStyle(fontWeight: FontWeight.w900),
+        ),
+      ),
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        backgroundColor: button,
+        foregroundColor: Colors.white,
+        elevation: 6,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(18)),
         ),
       ),
     );

@@ -23,77 +23,11 @@ class MedicationStore extends ChangeNotifier {
     AppStorageService? storage,
     NotificationService? notifications,
   }) {
-    final now = DateTime.now();
-
-    const metforminId = 'med-1';
-    const amlodipineId = 'med-2';
-    const vitaminCId = 'med-3';
-
     return MedicationStore(
       storage: storage,
       notifications: notifications,
-      initialMedications:
-          storage?.loadMedications() ??
-          [
-            Medication(
-              id: metforminId,
-              name: 'Metformin',
-              dosage: '1 tablet',
-              quantity: '30 tablets',
-              duration: '1 Jun - 30 Jun',
-              timing: MedicationTiming.afterMeal,
-              instructions: 'Take with dinner.',
-              isActive: true,
-              createdAt: now,
-            ),
-            Medication(
-              id: amlodipineId,
-              name: 'Amlodipine',
-              dosage: '1 tablet',
-              quantity: '30 tablets',
-              duration: '-',
-              timing: MedicationTiming.morning,
-              instructions: 'Take once every morning.',
-              isActive: true,
-              createdAt: now,
-            ),
-            Medication(
-              id: vitaminCId,
-              name: 'Vitamin C',
-              dosage: '2 tablet',
-              quantity: '60 tablets',
-              duration: '-',
-              timing: MedicationTiming.afternoon,
-              instructions: 'Take once daily.',
-              isActive: true,
-              createdAt: now,
-            ),
-          ],
-      initialSchedules:
-          storage?.loadSchedules() ??
-          [
-            MedicationSchedule(
-              id: 'schedule-1',
-              medicationId: amlodipineId,
-              timeInMinutes: 8 * 60,
-              status: MedicationStatus.pending,
-              createdAt: now,
-            ),
-            MedicationSchedule(
-              id: 'schedule-2',
-              medicationId: vitaminCId,
-              timeInMinutes: 13 * 60,
-              status: MedicationStatus.taken,
-              createdAt: now,
-            ),
-            MedicationSchedule(
-              id: 'schedule-3',
-              medicationId: metforminId,
-              timeInMinutes: 20 * 60,
-              status: MedicationStatus.pending,
-              createdAt: now,
-            ),
-          ],
+      initialMedications: storage?.loadMedications(),
+      initialSchedules: storage?.loadSchedules(),
       initialHistories: storage?.loadMedicationHistories(),
     );
   }
@@ -103,12 +37,17 @@ class MedicationStore extends ChangeNotifier {
   final List<MedicationHistory> _histories;
   final AppStorageService? _storage;
   final NotificationService? _notifications;
+  String? _currentPatientId;
 
-  List<Medication> get medications => List.unmodifiable(_medications);
+  List<Medication> get medications {
+    return List.unmodifiable(_medicationsForCurrentPatient());
+  }
 
   List<MedicationHistory> get medicationHistories {
-    final items = List<MedicationHistory>.from(_histories)
-      ..sort((a, b) => b.actionAt.compareTo(a.actionAt));
+    final patientId = _currentPatientId;
+    final items =
+        _histories.where((history) => history.patientId == patientId).toList()
+          ..sort((a, b) => b.actionAt.compareTo(a.actionAt));
     return List.unmodifiable(items);
   }
 
@@ -116,7 +55,7 @@ class MedicationStore extends ChangeNotifier {
     final items = <ScheduledMedication>[];
 
     for (final schedule in _schedules) {
-      final medication = _findMedication(schedule.medicationId);
+      final medication = _findCurrentMedication(schedule.medicationId);
       if (medication != null) {
         items.add(
           ScheduledMedication(schedule: schedule, medication: medication),
@@ -130,6 +69,17 @@ class MedicationStore extends ChangeNotifier {
     return List.unmodifiable(items);
   }
 
+  void setCurrentPatientId(String? patientId) {
+    if (_currentPatientId == patientId) {
+      return;
+    }
+    _currentPatientId = patientId;
+    if (patientId != null) {
+      _restorePendingNotifications();
+    }
+    notifyListeners();
+  }
+
   void addMedication({
     required String name,
     required String dosage,
@@ -140,8 +90,14 @@ class MedicationStore extends ChangeNotifier {
     required bool isActive,
     Uint8List? imageBytes,
   }) {
+    final patientId = _currentPatientId;
+    if (patientId == null) {
+      return;
+    }
+
     final medication = Medication(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
+      patientId: patientId,
       name: name.trim(),
       dosage: dosage.trim(),
       quantity: quantity.trim(),
@@ -165,6 +121,7 @@ class MedicationStore extends ChangeNotifier {
     }
 
     _medications[index] = medication.copyWith(
+      patientId: medication.patientId,
       name: medication.name.trim(),
       dosage: medication.dosage.trim(),
       quantity: medication.quantity.trim(),
@@ -186,6 +143,9 @@ class MedicationStore extends ChangeNotifier {
   }
 
   void addSchedule({required String medicationId, required int timeInMinutes}) {
+    if (_currentPatientId == null) {
+      return;
+    }
     final schedule = MedicationSchedule(
       id: 'schedule-${DateTime.now().microsecondsSinceEpoch}',
       medicationId: medicationId,
@@ -235,17 +195,18 @@ class MedicationStore extends ChangeNotifier {
     _storage?.saveMedicationHistories(_histories);
   }
 
-  Medication? _findMedication(String id) {
-    for (final medication in _medications) {
-      if (medication.id == id) {
-        return medication;
-      }
+  List<Medication> _medicationsForCurrentPatient() {
+    final patientId = _currentPatientId;
+    if (patientId == null) {
+      return const [];
     }
-    return null;
+    return _medications
+        .where((medication) => medication.patientId == patientId)
+        .toList();
   }
 
   void _scheduleNotification(MedicationSchedule schedule) {
-    final medication = _findMedication(schedule.medicationId);
+    final medication = _findCurrentMedication(schedule.medicationId);
     if (medication == null || !medication.isActive) {
       return;
     }
@@ -260,14 +221,15 @@ class MedicationStore extends ChangeNotifier {
 
   void _restorePendingNotifications() {
     for (final schedule in _schedules) {
-      if (schedule.status == MedicationStatus.pending) {
+      if (schedule.status == MedicationStatus.pending &&
+          _findCurrentMedication(schedule.medicationId) != null) {
         _scheduleNotification(schedule);
       }
     }
   }
 
   void _addHistory(MedicationSchedule schedule, MedicationStatus status) {
-    final medication = _findMedication(schedule.medicationId);
+    final medication = _findCurrentMedication(schedule.medicationId);
     if (medication == null) {
       return;
     }
@@ -276,6 +238,7 @@ class MedicationStore extends ChangeNotifier {
       0,
       MedicationHistory(
         id: 'history-${DateTime.now().microsecondsSinceEpoch}',
+        patientId: medication.patientId,
         medicationId: medication.id,
         scheduleId: schedule.id,
         medicationName: medication.name,
@@ -284,5 +247,18 @@ class MedicationStore extends ChangeNotifier {
         actionAt: DateTime.now(),
       ),
     );
+  }
+
+  Medication? _findCurrentMedication(String id) {
+    final patientId = _currentPatientId;
+    if (patientId == null) {
+      return null;
+    }
+    for (final medication in _medications) {
+      if (medication.id == id && medication.patientId == patientId) {
+        return medication;
+      }
+    }
+    return null;
   }
 }

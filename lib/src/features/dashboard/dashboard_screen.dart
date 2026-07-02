@@ -6,6 +6,7 @@ import '../../core/models/medication_history.dart';
 import '../../core/models/medication_schedule.dart';
 import '../../core/state/health_store.dart';
 import '../../core/state/medication_store.dart';
+import '../../shared/widgets/pressable_scale.dart';
 import '../../theme/app_theme.dart';
 import '../health/health_screen.dart';
 import '../medication/medication_screen.dart';
@@ -32,34 +33,190 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_selectedIndex],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) {
-          setState(() => _selectedIndex = index);
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.analytics_outlined),
-            selectedIcon: Icon(Icons.analytics),
-            label: 'Home',
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            const _DashboardHeader(),
+            Expanded(
+              child: IndexedStack(index: _selectedIndex, children: _screens),
+            ),
+            _DashboardNavigation(
+              selectedIndex: _selectedIndex,
+              onDestinationSelected: (index) {
+                setState(() => _selectedIndex = index);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DashboardHeader extends StatelessWidget {
+  const _DashboardHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 170,
+      width: double.infinity,
+      clipBehavior: Clip.antiAlias,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(18)),
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            'assets/images/health_header.jpg',
+            fit: BoxFit.cover,
+            alignment: Alignment.center,
           ),
-          NavigationDestination(
-            icon: Icon(Icons.medication_outlined),
-            selectedIcon: Icon(Icons.medication),
-            label: 'Meds',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.alarm_outlined),
-            selectedIcon: Icon(Icons.alarm),
-            label: 'Schedule',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.monitor_heart_outlined),
-            selectedIcon: Icon(Icons.monitor_heart),
-            label: 'Health',
+          Positioned(
+            top: 18,
+            left: 18,
+            child: Material(
+              color: Colors.white.withValues(alpha: 0.74),
+              shape: const CircleBorder(),
+              child: IconButton(
+                tooltip: 'Profile',
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                  );
+                },
+                icon: const Icon(Icons.account_circle_outlined, size: 32),
+              ),
+            ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _DashboardNavigation extends StatelessWidget {
+  const _DashboardNavigation({
+    required this.selectedIndex,
+    required this.onDestinationSelected,
+  });
+
+  final int selectedIndex;
+  final ValueChanged<int> onDestinationSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(18, 8, 18, 14),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFD7E8F2),
+          borderRadius: BorderRadius.circular(34),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x16000000),
+              blurRadius: 12,
+              offset: Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            _NavButton(
+              icon: Icons.home_outlined,
+              selectedIcon: Icons.home,
+              label: 'Home',
+              selected: selectedIndex == 0,
+              onTap: () => onDestinationSelected(0),
+            ),
+            _NavButton(
+              icon: Icons.medication_outlined,
+              selectedIcon: Icons.medication,
+              label: 'Meds',
+              selected: selectedIndex == 1,
+              onTap: () => onDestinationSelected(1),
+            ),
+            _NavButton(
+              icon: Icons.alarm_outlined,
+              selectedIcon: Icons.alarm,
+              label: 'Schedule',
+              selected: selectedIndex == 2,
+              onTap: () => onDestinationSelected(2),
+            ),
+            _NavButton(
+              icon: Icons.monitor_heart_outlined,
+              selectedIcon: Icons.monitor_heart,
+              label: 'Health',
+              selected: selectedIndex == 3,
+              onTap: () => onDestinationSelected(3),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NavButton extends StatelessWidget {
+  const _NavButton({
+    required this.icon,
+    required this.selectedIcon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final IconData selectedIcon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Tooltip(
+        message: label,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(28),
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            padding: const EdgeInsets.symmetric(vertical: 9),
+            decoration: BoxDecoration(
+              color: selected
+                  ? Colors.white.withValues(alpha: 0.72)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(28),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  selected ? selectedIcon : icon,
+                  color: Colors.black,
+                  size: 28,
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -80,42 +237,26 @@ class _HomeTabState extends State<_HomeTab> {
     final medicationStore = context.watch<MedicationStore>();
     final healthStore = context.watch<HealthStore>();
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Today'),
-        actions: [
-          IconButton(
-            tooltip: 'Profile',
-            onPressed: () {
-              Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (_) => const ProfileScreen()));
-            },
-            icon: const Icon(Icons.account_circle_outlined),
-          ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _AdherenceCard(schedules: medicationStore.scheduledMedications),
-          const SizedBox(height: 14),
-          _NextDoseCard(schedules: medicationStore.scheduledMedications),
-          const SizedBox(height: 14),
-          _HealthSnapshotCard(records: healthStore.records),
-          const SizedBox(height: 14),
-          _MedicationHistoryReport(
-            histories: medicationStore.medicationHistories,
-            period: _period,
-            onPeriodChanged: (period) => setState(() => _period = period),
-          ),
-          const SizedBox(height: 14),
-          _SuggestionCard(
-            schedules: medicationStore.scheduledMedications,
-            records: healthStore.records,
-          ),
-        ],
-      ),
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
+      children: [
+        _AdherenceCard(schedules: medicationStore.scheduledMedications),
+        const SizedBox(height: 14),
+        _NextDoseCard(schedules: medicationStore.scheduledMedications),
+        const SizedBox(height: 14),
+        _HealthSnapshotCard(records: healthStore.records),
+        const SizedBox(height: 14),
+        _MedicationHistoryReport(
+          histories: medicationStore.medicationHistories,
+          period: _period,
+          onPeriodChanged: (period) => setState(() => _period = period),
+        ),
+        const SizedBox(height: 14),
+        _SuggestionCard(
+          schedules: medicationStore.scheduledMedications,
+          records: healthStore.records,
+        ),
+      ],
     );
   }
 }
@@ -151,6 +292,10 @@ class _AdherenceCard extends StatelessWidget {
     final percentage = (adherence * 100).round();
 
     return Card(
+      color: const Color(0xFFFCF6ED),
+      elevation: 3,
+      shadowColor: Colors.black26,
+      shape: _dashboardCardShape,
       child: Padding(
         padding: const EdgeInsets.all(18),
         child: Row(
@@ -219,6 +364,10 @@ class _NextDoseCard extends StatelessWidget {
         .firstOrNull;
 
     return Card(
+      color: const Color(0xFFFCF6ED),
+      elevation: 3,
+      shadowColor: Colors.black26,
+      shape: _dashboardCardShape,
       child: next == null
           ? const ListTile(
               leading: CircleAvatar(
@@ -240,14 +389,21 @@ class _NextDoseCard extends StatelessWidget {
               subtitle: Text(
                 '${next.medication.name} - ${next.schedule.displayTime}',
               ),
-              trailing: FilledButton.tonal(
-                onPressed: () {
-                  context.read<MedicationStore>().updateScheduleStatus(
-                    next.schedule.id,
-                    MedicationStatus.taken,
-                  );
-                },
-                child: const Text('Taken'),
+              trailing: PressableScale(
+                child: FilledButton(
+                  onPressed: () {
+                    context.read<MedicationStore>().updateScheduleStatus(
+                      next.schedule.id,
+                      MedicationStatus.taken,
+                    );
+                  },
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(82, 40),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const Text('Taken'),
+                ),
               ),
             ),
     );
@@ -262,6 +418,10 @@ class _HealthSnapshotCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      color: const Color(0xFFFCF6ED),
+      elevation: 3,
+      shadowColor: Colors.black26,
+      shape: _dashboardCardShape,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -317,6 +477,10 @@ class _SuggestionCard extends StatelessWidget {
     ];
 
     return Card(
+      color: const Color(0xFFFCF6ED),
+      elevation: 3,
+      shadowColor: Colors.black26,
+      shape: _dashboardCardShape,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -365,6 +529,10 @@ class _MedicationHistoryReport extends StatelessWidget {
     final adherence = total == 0 ? 0 : ((taken / total) * 100).round();
 
     return Card(
+      color: const Color(0xFFFCF6ED),
+      elevation: 3,
+      shadowColor: Colors.black26,
+      shape: _dashboardCardShape,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -645,6 +813,11 @@ class _MetricTile extends StatelessWidget {
     );
   }
 }
+
+final ShapeBorder _dashboardCardShape = RoundedRectangleBorder(
+  borderRadius: BorderRadius.circular(18),
+  side: const BorderSide(color: Color(0xFFD6CDC0)),
+);
 
 Color _adherenceColor(double value) {
   if (value >= 0.8) return AppTheme.success;

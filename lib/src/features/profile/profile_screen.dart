@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/state/auth_store.dart';
+import '../../shared/widgets/pressable_scale.dart';
 import '../auth/login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -95,16 +96,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   const SizedBox(height: 22),
-                  ElevatedButton.icon(
-                    onPressed: _save,
-                    icon: const Icon(Icons.save_outlined),
-                    label: const Text('Save Profile'),
+                  PressableScale(
+                    child: ElevatedButton.icon(
+                      onPressed: _save,
+                      icon: const Icon(Icons.save_outlined),
+                      label: const Text('Save Profile'),
+                    ),
                   ),
                   const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    onPressed: _logout,
-                    icon: const Icon(Icons.logout),
-                    label: const Text('Logout'),
+                  PressableScale(
+                    child: OutlinedButton.icon(
+                      onPressed: _logout,
+                      icon: const Icon(Icons.logout),
+                      label: const Text('Logout'),
+                    ),
                   ),
                 ],
               ),
@@ -119,24 +124,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return null;
   }
 
-  void _save() {
+  Future<void> _save() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    final error = context.read<AuthStore>().updateProfile(
+    final error = await context.read<AuthStore>().updateProfile(
       name: _nameController.text,
       email: _emailController.text,
       password: _passwordController.text,
     );
+
+    if (!mounted) {
+      return;
+    }
 
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(error ?? 'Profile updated')));
   }
 
-  void _logout() {
-    context.read<AuthStore>().logout();
+  Future<void> _logout() async {
+    await context.read<AuthStore>().logout();
+    if (!mounted) {
+      return;
+    }
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const LoginScreen()),
       (_) => false,

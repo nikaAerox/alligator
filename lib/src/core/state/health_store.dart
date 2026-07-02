@@ -8,41 +8,36 @@ class HealthStore extends ChangeNotifier {
     : _records = List.of(initialRecords ?? const []);
 
   factory HealthStore.seeded({AppStorageService? storage}) {
-    final now = DateTime.now();
-
     return HealthStore(
       storage: storage,
-      initialRecords:
-          storage?.loadHealthRecords() ??
-          [
-            HealthRecord(
-              id: 'health-1',
-              type: HealthRecordType.bmi,
-              value: '23.5',
-              recordedAt: now,
-              weightKg: 64,
-              heightCm: 165,
-            ),
-            HealthRecord(
-              id: 'health-2',
-              type: HealthRecordType.bloodSugar,
-              value: '6.2',
-              recordedAt: now,
-            ),
-            HealthRecord(
-              id: 'health-3',
-              type: HealthRecordType.bloodPressure,
-              value: '145/90',
-              recordedAt: now,
-            ),
-          ],
+      initialRecords: storage?.loadHealthRecords(),
     );
   }
 
   final List<HealthRecord> _records;
   final AppStorageService? _storage;
+  String? _currentPatientId;
 
-  List<HealthRecord> get records => List.unmodifiable(_records);
+  List<HealthRecord> get records {
+    final patientId = _currentPatientId;
+    if (patientId == null) {
+      return const [];
+    }
+    return List.unmodifiable(
+      _records.where((record) => record.patientId == patientId),
+    );
+  }
+
+  void setCurrentPatientId(String? patientId) {
+    if (_currentPatientId == patientId) {
+      return;
+    }
+    _currentPatientId = patientId;
+    if (patientId != null) {
+      _ensureEmptyRecords(patientId);
+    }
+    notifyListeners();
+  }
 
   void updateRecord(HealthRecord record) {
     final index = _records.indexWhere((item) => item.id == record.id);
@@ -51,10 +46,44 @@ class HealthStore extends ChangeNotifier {
     }
 
     _records[index] = record.copyWith(
+      patientId: record.patientId,
       value: record.value.trim(),
       recordedAt: DateTime.now(),
     );
     _storage?.saveHealthRecords(_records);
     notifyListeners();
+  }
+
+  void _ensureEmptyRecords(String patientId) {
+    final hasRecords = _records.any((record) => record.patientId == patientId);
+    if (hasRecords) {
+      return;
+    }
+
+    final now = DateTime.now();
+    _records.addAll([
+      HealthRecord(
+        id: 'health-$patientId-bmi',
+        patientId: patientId,
+        type: HealthRecordType.bmi,
+        value: '0',
+        recordedAt: now,
+      ),
+      HealthRecord(
+        id: 'health-$patientId-blood-sugar',
+        patientId: patientId,
+        type: HealthRecordType.bloodSugar,
+        value: '0',
+        recordedAt: now,
+      ),
+      HealthRecord(
+        id: 'health-$patientId-blood-pressure',
+        patientId: patientId,
+        type: HealthRecordType.bloodPressure,
+        value: '0/0',
+        recordedAt: now,
+      ),
+    ]);
+    _storage?.saveHealthRecords(_records);
   }
 }

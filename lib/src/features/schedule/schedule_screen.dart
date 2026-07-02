@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/models/medication_schedule.dart';
 import '../../core/state/medication_store.dart';
+import '../../shared/widgets/pressable_scale.dart';
 import '../../theme/app_theme.dart';
 
 class ScheduleScreen extends StatelessWidget {
@@ -12,23 +13,32 @@ class ScheduleScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final schedules = context.watch<MedicationStore>().scheduledMedications;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Schedule')),
-      body: schedules.isEmpty
-          ? const _EmptyScheduleState()
-          : ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemBuilder: (context, index) {
-                return _ScheduleCard(item: schedules[index]);
-              },
-              separatorBuilder: (_, _) => const SizedBox(height: 10),
-              itemCount: schedules.length,
+    return Stack(
+      children: [
+        schedules.isEmpty
+            ? const _EmptyScheduleState()
+            : ListView.separated(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 92),
+                itemBuilder: (context, index) {
+                  return _ScheduleCard(item: schedules[index]);
+                },
+                separatorBuilder: (_, _) => const SizedBox(height: 12),
+                itemCount: schedules.length,
+              ),
+        Positioned(
+          right: 16,
+          bottom: 18,
+          child: PressableScale(
+            child: FloatingActionButton.extended(
+              heroTag: 'schedule_add_button',
+              onPressed: () => _openScheduleForm(context),
+              extendedPadding: const EdgeInsets.symmetric(horizontal: 24),
+              icon: const Icon(Icons.alarm_add),
+              label: const Text('Reminder'),
             ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openScheduleForm(context),
-        icon: const Icon(Icons.alarm_add),
-        label: const Text('Reminder'),
-      ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -61,6 +71,13 @@ class _ScheduleCard extends StatelessWidget {
     final medication = item.medication;
 
     return Card(
+      color: const Color(0xFFFCF6ED),
+      elevation: 3,
+      shadowColor: Colors.black26,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: const BorderSide(color: Color(0xFFD6CDC0)),
+      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: ListTile(
@@ -110,41 +127,54 @@ class _ScheduleCard extends StatelessWidget {
             itemBuilder: (context) => const [
               PopupMenuItem(
                 value: _ScheduleAction.taken,
-                child: ListTile(
-                  leading: Icon(Icons.check_circle_outline),
-                  title: Text('Mark taken'),
-                ),
+                child: _ScheduleMenuPill(label: 'Mark taken'),
               ),
               PopupMenuItem(
                 value: _ScheduleAction.missed,
-                child: ListTile(
-                  leading: Icon(Icons.cancel_outlined),
-                  title: Text('Mark missed'),
-                ),
+                child: _ScheduleMenuPill(label: 'Mark missed'),
               ),
               PopupMenuItem(
                 value: _ScheduleAction.postponed,
-                child: ListTile(
-                  leading: Icon(Icons.snooze_outlined),
-                  title: Text('Postpone'),
-                ),
+                child: _ScheduleMenuPill(label: 'Postpone'),
               ),
               PopupMenuItem(
                 value: _ScheduleAction.pending,
-                child: ListTile(
-                  leading: Icon(Icons.refresh),
-                  title: Text('Set pending'),
-                ),
+                child: _ScheduleMenuPill(label: 'Set pending'),
               ),
               PopupMenuItem(
                 value: _ScheduleAction.delete,
-                child: ListTile(
-                  leading: Icon(Icons.delete_outline),
-                  title: Text('Delete'),
-                ),
+                child: _ScheduleMenuPill(label: 'Delete'),
               ),
             ],
             child: _StatusChip(status: schedule.status),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ScheduleMenuPill extends StatelessWidget {
+  const _ScheduleMenuPill({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppTheme.button,
+      elevation: 3,
+      shadowColor: Colors.black26,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        width: 146,
+        padding: const EdgeInsets.symmetric(vertical: 9),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w900,
           ),
         ),
       ),
@@ -253,16 +283,20 @@ class _ScheduleFormSheetState extends State<ScheduleFormSheet> {
             onChanged: (value) => setState(() => _medicationId = value),
           ),
           const SizedBox(height: 14),
-          OutlinedButton.icon(
-            onPressed: _pickTime,
-            icon: const Icon(Icons.schedule),
-            label: Text('Time: ${_time.format(context)}'),
+          PressableScale(
+            child: OutlinedButton.icon(
+              onPressed: _pickTime,
+              icon: const Icon(Icons.schedule),
+              label: Text('Time: ${_time.format(context)}'),
+            ),
           ),
           const SizedBox(height: 22),
-          ElevatedButton.icon(
-            onPressed: _save,
-            icon: const Icon(Icons.alarm_add),
-            label: const Text('Add Reminder'),
+          PressableScale(
+            child: ElevatedButton.icon(
+              onPressed: _save,
+              icon: const Icon(Icons.alarm_add),
+              label: const Text('Add Reminder'),
+            ),
           ),
         ],
       ),

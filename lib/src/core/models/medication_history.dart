@@ -3,6 +3,7 @@ import 'medication_schedule.dart';
 class MedicationHistory {
   const MedicationHistory({
     required this.id,
+    required this.patientId,
     required this.medicationId,
     required this.scheduleId,
     required this.medicationName,
@@ -12,6 +13,7 @@ class MedicationHistory {
   });
 
   final String id;
+  final String patientId;
   final String medicationId;
   final String scheduleId;
   final String medicationName;
@@ -22,6 +24,7 @@ class MedicationHistory {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'patientId': patientId,
       'medicationId': medicationId,
       'scheduleId': scheduleId,
       'medicationName': medicationName,
@@ -34,6 +37,7 @@ class MedicationHistory {
   factory MedicationHistory.fromJson(Map<String, dynamic> json) {
     return MedicationHistory(
       id: json['id'] as String,
+      patientId: json['patientId'] as String? ?? '',
       medicationId: json['medicationId'] as String,
       scheduleId: json['scheduleId'] as String,
       medicationName: json['medicationName'] as String,

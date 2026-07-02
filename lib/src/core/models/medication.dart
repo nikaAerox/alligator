@@ -19,6 +19,7 @@ enum MedicationTiming {
 class Medication {
   const Medication({
     required this.id,
+    required this.patientId,
     required this.name,
     required this.dosage,
     required this.quantity,
@@ -31,6 +32,7 @@ class Medication {
   });
 
   final String id;
+  final String patientId;
   final String name;
   final String dosage;
   final String quantity;
@@ -43,6 +45,7 @@ class Medication {
 
   Medication copyWith({
     String? id,
+    String? patientId,
     String? name,
     String? dosage,
     String? quantity,
@@ -55,6 +58,7 @@ class Medication {
   }) {
     return Medication(
       id: id ?? this.id,
+      patientId: patientId ?? this.patientId,
       name: name ?? this.name,
       dosage: dosage ?? this.dosage,
       quantity: quantity ?? this.quantity,
@@ -70,6 +74,7 @@ class Medication {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'patientId': patientId,
       'name': name,
       'dosage': dosage,
       'quantity': quantity,
@@ -87,6 +92,7 @@ class Medication {
 
     return Medication(
       id: json['id'] as String,
+      patientId: json['patientId'] as String? ?? '',
       name: json['name'] as String,
       dosage: json['dosage'] as String,
       quantity: json['quantity'] as String? ?? '',

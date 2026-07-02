@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/models/health_record.dart';
 import '../../core/state/health_store.dart';
+import '../../shared/widgets/pressable_scale.dart';
 import '../../theme/app_theme.dart';
 
 class HealthScreen extends StatelessWidget {
@@ -12,21 +13,18 @@ class HealthScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final records = context.watch<HealthStore>().records;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Health Records')),
-      body: ListView.separated(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
-        itemBuilder: (context, index) {
-          return Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 430),
-              child: _HealthRecordCard(record: records[index]),
-            ),
-          );
-        },
-        separatorBuilder: (_, _) => const SizedBox(height: 12),
-        itemCount: records.length,
-      ),
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
+      itemBuilder: (context, index) {
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 430),
+            child: _HealthRecordCard(record: records[index]),
+          ),
+        );
+      },
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      itemCount: records.length,
     );
   }
 }
@@ -65,22 +63,21 @@ class _HealthRecordCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                FilledButton(
-                  onPressed: () => _openEditForm(context),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF4D7480),
-                    foregroundColor: Colors.white,
-                    elevation: 3,
-                    minimumSize: const Size(70, 34),
-                    padding: const EdgeInsets.symmetric(horizontal: 18),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
+                PressableScale(
+                  child: FilledButton(
+                    onPressed: () => _openEditForm(context),
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(74, 36),
+                      padding: const EdgeInsets.symmetric(horizontal: 18),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                  ),
-                  child: const Text(
-                    'Edit',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
+                    child: const Text(
+                      'Edit',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -241,15 +238,12 @@ class _HealthRecordFormSheetState extends State<HealthRecordFormSheet> {
               const SizedBox(height: 18),
               ..._buildFields(),
               const SizedBox(height: 22),
-              ElevatedButton.icon(
-                onPressed: _save,
-                style: ElevatedButton.styleFrom(
-                  elevation: 4,
-                  backgroundColor: const Color(0xFF4D7480),
-                  foregroundColor: Colors.white,
+              PressableScale(
+                child: ElevatedButton.icon(
+                  onPressed: _save,
+                  icon: const Icon(Icons.calculate_outlined),
+                  label: const Text('Calculate & Save'),
                 ),
-                icon: const Icon(Icons.calculate_outlined),
-                label: const Text('Calculate & Save'),
               ),
             ],
           ),
@@ -376,6 +370,13 @@ _HealthStatus _healthStatus(HealthRecord record) {
     // Determines the BMI level based on the record type and value
     case HealthRecordType.bmi:
       final bmi = double.tryParse(record.value) ?? 0;
+      if (bmi == 0) {
+        return const _HealthStatus(
+          'No reading',
+          AppTheme.neutral,
+          'Please enter your BMI reading.',
+        );
+      }
       if (bmi < 18.5) {
         return const _HealthStatus(
           'Underweight',
@@ -405,6 +406,13 @@ _HealthStatus _healthStatus(HealthRecord record) {
     // Determines the blood sugar level based on the record type and value
     case HealthRecordType.bloodSugar:
       final sugar = double.tryParse(record.value) ?? 0;
+      if (sugar == 0) {
+        return const _HealthStatus(
+          'No reading',
+          AppTheme.neutral,
+          'Please enter your blood sugar reading.',
+        );
+      }
       if (sugar < 4.0) {
         return const _HealthStatus(
           'Low Blood Sugar',
@@ -436,6 +444,13 @@ _HealthStatus _healthStatus(HealthRecord record) {
       final parts = record.value.split('/');
       final systolic = parts.isNotEmpty ? int.tryParse(parts.first) ?? 0 : 0;
       final diastolic = parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0;
+      if (systolic == 0 || diastolic == 0) {
+        return const _HealthStatus(
+          'No reading',
+          AppTheme.neutral,
+          'Please enter your blood pressure reading.',
+        );
+      }
       if (systolic < 90 || diastolic < 60) {
         return const _HealthStatus(
           'Low Blood Pressure',

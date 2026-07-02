@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/state/auth_store.dart';
+import '../../shared/widgets/pressable_scale.dart';
 import '../../theme/app_theme.dart';
 import '../dashboard/dashboard_screen.dart';
 
@@ -29,83 +30,104 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
-            children: [
-              const SizedBox(height: 16),
-              const _BrandHeader(),
-              const SizedBox(height: 36),
-              TextFormField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: Icon(Icons.mail_outline),
-                ),
-                validator: (value) {
-                  final text = value?.trim() ?? '';
-                  if (!text.contains('@') || !text.contains('.')) {
-                    return 'Enter a valid email';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 14),
-              TextFormField(
-                controller: _passwordController,
-                obscureText: _obscurePassword,
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  suffixIcon: IconButton(
-                    tooltip: 'Toggle password',
-                    onPressed: () {
-                      setState(() => _obscurePassword = !_obscurePassword);
+        child: Stack(
+          children: [
+            Form(
+              key: _formKey,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+                children: [
+                  const SizedBox(height: 16),
+                  const _BrandHeader(),
+                  const SizedBox(height: 36),
+                  TextFormField(
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: const InputDecoration(
+                      labelText: 'Email',
+                      prefixIcon: Icon(Icons.mail_outline),
+                    ),
+                    validator: (value) {
+                      final text = value?.trim() ?? '';
+                      if (!text.contains('@') || !text.contains('.')) {
+                        return 'Enter a valid email';
+                      }
+                      return null;
                     },
-                    icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
+                  ),
+                  const SizedBox(height: 14),
+                  TextFormField(
+                    controller: _passwordController,
+                    obscureText: _obscurePassword,
+                    decoration: InputDecoration(
+                      labelText: 'Password',
+                      prefixIcon: const Icon(Icons.lock_outline),
+                      suffixIcon: IconButton(
+                        tooltip: 'Toggle password',
+                        onPressed: () {
+                          setState(() => _obscurePassword = !_obscurePassword);
+                        },
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                        ),
+                      ),
+                    ),
+                    validator: (value) {
+                      if ((value ?? '').isEmpty) {
+                        return 'Enter password';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 22),
+                  PressableScale(
+                    child: ElevatedButton.icon(
+                      onPressed: _login,
+                      icon: const Icon(Icons.login),
+                      label: const Text('Sign In'),
                     ),
                   ),
-                ),
-                validator: (value) {
-                  if ((value ?? '').isEmpty) {
-                    return 'Enter password';
-                  }
-                  return null;
-                },
+                  const SizedBox(height: 14),
+                  PressableScale(
+                    child: OutlinedButton.icon(
+                      onPressed: _openRegisterSheet,
+                      icon: const Icon(Icons.person_add_alt_1),
+                      label: const Text('Create Account'),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 22),
-              ElevatedButton.icon(
-                onPressed: _login,
-                icon: const Icon(Icons.login),
-                label: const Text('Sign In'),
+            ),
+            Positioned(
+              top: 0,
+              left: 0,
+              child: IconButton(
+                tooltip: 'Back',
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(Icons.arrow_back),
               ),
-              const SizedBox(height: 14),
-              OutlinedButton.icon(
-                onPressed: _openRegisterSheet,
-                icon: const Icon(Icons.person_add_alt_1),
-                label: const Text('Create Account'),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  void _login() {
+  Future<void> _login() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    final error = context.read<AuthStore>().login(
+    final error = await context.read<AuthStore>().login(
       email: _emailController.text,
       password: _passwordController.text,
     );
+
+    if (!mounted) {
+      return;
+    }
 
     if (error != null) {
       ScaffoldMessenger.of(
@@ -227,10 +249,12 @@ class _RegisterSheetState extends State<RegisterSheet> {
                 },
               ),
               const SizedBox(height: 22),
-              ElevatedButton.icon(
-                onPressed: _register,
-                icon: const Icon(Icons.person_add_alt_1),
-                label: const Text('Register'),
+              PressableScale(
+                child: ElevatedButton.icon(
+                  onPressed: _register,
+                  icon: const Icon(Icons.person_add_alt_1),
+                  label: const Text('Register'),
+                ),
               ),
             ],
           ),
@@ -246,17 +270,21 @@ class _RegisterSheetState extends State<RegisterSheet> {
     return null;
   }
 
-  void _register() {
+  Future<void> _register() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    final error = context.read<AuthStore>().register(
+    final error = await context.read<AuthStore>().register(
       name: _nameController.text,
       email: _emailController.text,
       password: _passwordController.text,
       confirmPassword: _confirmPasswordController.text,
     );
+
+    if (!mounted) {
+      return;
+    }
 
     if (error != null) {
       ScaffoldMessenger.of(
@@ -278,24 +306,27 @@ class _BrandHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Container(
-          width: 72,
-          height: 72,
-          decoration: BoxDecoration(
-            color: AppTheme.primary,
-            borderRadius: BorderRadius.circular(18),
-          ),
-          child: const Icon(
-            Icons.medication_liquid,
-            color: Colors.white,
-            size: 38,
+        Center(
+          child: Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: AppTheme.primary,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: const Icon(
+              Icons.medication_liquid,
+              color: Colors.white,
+              size: 38,
+            ),
           ),
         ),
         const SizedBox(height: 22),
         const Text(
           'MediCare',
+          textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 34,
             height: 1,
@@ -304,11 +335,15 @@ class _BrandHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 10),
-        Text(
-          'Medication reminders and health records in one simple app.',
-          style: Theme.of(
-            context,
-          ).textTheme.bodyLarge?.copyWith(color: const Color(0xFF5D6B6E)),
+        Container(
+          alignment: Alignment.center,
+          child: Text(
+            'Medication reminders and health records in one simple app.',
+            textAlign: TextAlign.center,
+            style: Theme.of(
+              context,
+            ).textTheme.bodyLarge?.copyWith(color: const Color(0xFF5D6B6E)),
+          ),
         ),
       ],
     );
