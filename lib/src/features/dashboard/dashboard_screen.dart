@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -20,8 +22,10 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends State<DashboardScreen>
+    with WidgetsBindingObserver {
   int _selectedIndex = 0;
+  Timer? _syncTimer;
 
   static const List<Widget> _screens = [
     _HomeTab(),
@@ -29,6 +33,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ScheduleScreen(),
     HealthScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    if (!const bool.fromEnvironment('FLUTTER_TEST')) {
+      _syncTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+        if (!mounted) {
+          return;
+        }
+        context.read<MedicationStore>().syncOverduePendingReminders();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _syncTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      context.read<MedicationStore>().syncOverduePendingReminders();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

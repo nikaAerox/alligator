@@ -22,7 +22,7 @@ class SqliteStorageService implements AppStorageService {
   );
 
   static const _databaseName = 'medicare.db';
-  static const _databaseVersion = 4;
+  static const _databaseVersion = 5;
 
   static const _medicationsTable = 'medications';
   static const _schedulesTable = 'medication_schedules';
@@ -80,6 +80,7 @@ class SqliteStorageService implements AppStorageService {
         timeInMinutes INTEGER NOT NULL,
         status TEXT NOT NULL,
         createdAt TEXT NOT NULL,
+        scheduledFor TEXT,
         FOREIGN KEY (medicationId)
           REFERENCES $_medicationsTable (id)
           ON DELETE CASCADE
@@ -116,6 +117,9 @@ class SqliteStorageService implements AppStorageService {
       await _addColumnIfMissing(db, _medicationsTable, 'patientId TEXT');
       await _addColumnIfMissing(db, _historiesTable, 'patientId TEXT');
       await _addColumnIfMissing(db, _healthRecordsTable, 'patientId TEXT');
+    }
+    if (oldVersion < 5) {
+      await _addColumnIfMissing(db, _schedulesTable, 'scheduledFor TEXT');
     }
   }
 
@@ -355,6 +359,7 @@ class SqliteStorageService implements AppStorageService {
       'timeInMinutes': schedule.timeInMinutes,
       'status': schedule.status.name,
       'createdAt': schedule.createdAt.toIso8601String(),
+      'scheduledFor': schedule.scheduledFor?.toIso8601String(),
     };
   }
 
@@ -365,6 +370,7 @@ class SqliteStorageService implements AppStorageService {
       timeInMinutes: row['timeInMinutes']! as int,
       status: MedicationStatus.values.byName(row['status']! as String),
       createdAt: DateTime.parse(row['createdAt']! as String),
+      scheduledFor: DateTime.tryParse(row['scheduledFor'] as String? ?? ''),
     );
   }
 

@@ -18,6 +18,7 @@ class MedicationSchedule {
     required this.timeInMinutes,
     required this.status,
     required this.createdAt,
+    required this.scheduledFor,
   });
 
   final String id;
@@ -25,6 +26,7 @@ class MedicationSchedule {
   final int timeInMinutes;
   final MedicationStatus status;
   final DateTime createdAt;
+  final DateTime? scheduledFor;
 
   String get displayTime {
     final hour = timeInMinutes ~/ 60;
@@ -40,6 +42,7 @@ class MedicationSchedule {
     int? timeInMinutes,
     MedicationStatus? status,
     DateTime? createdAt,
+    DateTime? scheduledFor,
   }) {
     return MedicationSchedule(
       id: id ?? this.id,
@@ -47,6 +50,7 @@ class MedicationSchedule {
       timeInMinutes: timeInMinutes ?? this.timeInMinutes,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
+      scheduledFor: scheduledFor ?? this.scheduledFor,
     );
   }
 
@@ -57,6 +61,7 @@ class MedicationSchedule {
       'timeInMinutes': timeInMinutes,
       'status': status.name,
       'createdAt': createdAt.toIso8601String(),
+      'scheduledFor': scheduledFor?.toIso8601String(),
     };
   }
 
@@ -71,6 +76,7 @@ class MedicationSchedule {
       createdAt:
           DateTime.tryParse(json['createdAt'] as String? ?? '') ??
           DateTime.now(),
+      scheduledFor: DateTime.tryParse(json['scheduledFor'] as String? ?? ''),
     );
   }
 }

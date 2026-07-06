@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
 
+import '../notifications/notification_service.dart';
 import '../models/medication.dart';
 import '../models/medication_history.dart';
 import '../models/medication_schedule.dart';
-import '../notifications/notification_service.dart';
 import '../storage/app_storage_service.dart';
 
 class MedicationStore extends ChangeNotifier {
@@ -16,6 +16,7 @@ class MedicationStore extends ChangeNotifier {
   }) : _medications = List.of(initialMedications ?? const []),
        _schedules = List.of(initialSchedules ?? const []),
        _histories = List.of(initialHistories ?? const []) {
+    _notifications?.setActionHandler(_handleNotificationAction);
     _restorePendingNotifications();
   }
 
@@ -74,7 +75,9 @@ class MedicationStore extends ChangeNotifier {
       return;
     }
     _currentPatientId = patientId;
+    _notifications?.cancelAllMedicationReminders();
     if (patientId != null) {
+      syncOverduePendingReminders();
       _restorePendingNotifications();
     }
     notifyListeners();
@@ -135,9 +138,17 @@ class MedicationStore extends ChangeNotifier {
   }
 
   void deleteMedication(String id) {
+    final removedScheduleIds = _schedules
+        .where((schedule) => schedule.medicationId == id)
+        .map((schedule) => schedule.id)
+        .toList();
+
     _medications.removeWhere((medication) => medication.id == id);
     _schedules.removeWhere((schedule) => schedule.medicationId == id);
     _histories.removeWhere((history) => history.medicationId == id);
+    for (final scheduleId in removedScheduleIds) {
+      _notifications?.cancelMedicationReminder(scheduleId);
+    }
     _saveMedicationData();
     notifyListeners();
   }
@@ -152,6 +163,7 @@ class MedicationStore extends ChangeNotifier {
       timeInMinutes: timeInMinutes,
       status: MedicationStatus.pending,
       createdAt: DateTime.now(),
+      scheduledFor: _nextReminderTime(timeInMinutes),
     );
     _schedules.add(schedule);
     _storage?.saveSchedules(_schedules);
@@ -165,7 +177,13 @@ class MedicationStore extends ChangeNotifier {
       return;
     }
 
-    final updatedSchedule = _schedules[index].copyWith(status: status);
+    final current = _schedules[index];
+    final updatedSchedule = status == MedicationStatus.pending
+        ? current.copyWith(
+            status: status,
+            scheduledFor: _nextReminderTime(current.timeInMinutes),
+          )
+        : current.copyWith(status: status);
     _schedules[index] = updatedSchedule;
     if (status != MedicationStatus.pending) {
       _addHistory(updatedSchedule, status);
@@ -173,7 +191,7 @@ class MedicationStore extends ChangeNotifier {
     _storage?.saveSchedules(_schedules);
     _storage?.saveMedicationHistories(_histories);
     if (status == MedicationStatus.pending) {
-      _scheduleNotification(_schedules[index]);
+      _scheduleNotification(updatedSchedule);
     } else {
       _notifications?.cancelMedicationReminder(scheduleId);
     }
@@ -185,6 +203,43 @@ class MedicationStore extends ChangeNotifier {
     _storage?.saveSchedules(_schedules);
     _notifications?.cancelMedicationReminder(scheduleId);
     notifyListeners();
+  }
+
+  void syncOverduePendingReminders({DateTime? now}) {
+    final currentTime = now ?? DateTime.now();
+    var changed = false;
+
+    for (var index = 0; index < _schedules.length; index++) {
+      final schedule = _schedules[index];
+      if (schedule.status != MedicationStatus.pending) {
+        continue;
+      }
+
+      final dueAt = schedule.scheduledFor ?? _nextReminderTime(
+        schedule.timeInMinutes,
+        currentTime,
+      );
+
+      if (schedule.scheduledFor == null) {
+        _schedules[index] = schedule.copyWith(scheduledFor: dueAt);
+        changed = true;
+      }
+
+      if (!currentTime.isBefore(dueAt.add(const Duration(minutes: 5)))) {
+        _schedules[index] = _schedules[index].copyWith(
+          status: MedicationStatus.missed,
+        );
+        _addHistory(_schedules[index], MedicationStatus.missed);
+        _notifications?.cancelMedicationReminder(schedule.id);
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      _storage?.saveSchedules(_schedules);
+      _storage?.saveMedicationHistories(_histories);
+      notifyListeners();
+    }
   }
 
   void _saveMedicationData() {
@@ -209,21 +264,77 @@ class MedicationStore extends ChangeNotifier {
       return;
     }
 
+    final scheduledFor = schedule.scheduledFor ??
+        _nextReminderTime(schedule.timeInMinutes);
+
     _notifications?.scheduleMedicationReminder(
       scheduleId: schedule.id,
       medicationName: medication.name,
       dosage: medication.dosage,
-      timeInMinutes: schedule.timeInMinutes,
+      scheduledFor: scheduledFor,
     );
   }
 
   void _restorePendingNotifications() {
+    final now = DateTime.now();
+    var changed = false;
     for (final schedule in _schedules) {
       if (schedule.status == MedicationStatus.pending &&
           _findCurrentMedication(schedule.medicationId) != null) {
-        _scheduleNotification(schedule);
+        final dueAt = schedule.scheduledFor ?? _nextReminderTime(
+          schedule.timeInMinutes,
+          now,
+        );
+        if (schedule.scheduledFor == null) {
+          final index = _schedules.indexWhere((item) => item.id == schedule.id);
+          if (index != -1) {
+            _schedules[index] = _schedules[index].copyWith(scheduledFor: dueAt);
+            changed = true;
+          }
+        }
+        if (dueAt.isAfter(now)) {
+          _scheduleNotification(schedule.copyWith(scheduledFor: dueAt));
+        }
       }
     }
+
+    if (changed) {
+      _storage?.saveSchedules(_schedules);
+    }
+  }
+
+  void _handleNotificationAction(NotificationAction action) {
+    final status = switch (action.action) {
+      'taken' => MedicationStatus.taken,
+      'postponed' => MedicationStatus.postponed,
+      'missed' => MedicationStatus.missed,
+      _ => null,
+    };
+
+    if (status == null) {
+      return;
+    }
+
+    updateScheduleStatus(action.scheduleId, status);
+  }
+
+  DateTime _nextReminderTime(int timeInMinutes, [DateTime? reference]) {
+    final now = reference ?? DateTime.now();
+    final hour = timeInMinutes ~/ 60;
+    final minute = timeInMinutes % 60;
+    var scheduled = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      hour,
+      minute,
+    );
+
+    if (scheduled.isBefore(now)) {
+      scheduled = scheduled.add(const Duration(days: 1));
+    }
+
+    return scheduled;
   }
 
   void _addHistory(MedicationSchedule schedule, MedicationStatus status) {

@@ -4,8 +4,19 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
+import 'notification_types.dart';
+
 class NotificationService {
   NotificationService();
+
+  static const _channelId = 'medication_reminders';
+  static const _channelName = 'Medication Reminders';
+  static const _channelDescription = 'Reminders for scheduled medication times';
+  static const _actionTaken = 'medication_taken';
+  static const _actionPostponed = 'medication_postponed';
+  static const _actionMissed = 'medication_missed';
+
+  static NotificationActionHandler? _actionHandler;
 
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
@@ -16,47 +27,85 @@ class NotificationService {
     const androidSettings = AndroidInitializationSettings(
       '@mipmap/ic_launcher',
     );
-    const iosSettings = DarwinInitializationSettings();
+    const iosSettings = DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
     const settings = InitializationSettings(
       android: androidSettings,
       iOS: iosSettings,
     );
 
-    await _plugin.initialize(settings: settings);
+    await _plugin.initialize(
+      settings: settings,
+      onDidReceiveNotificationResponse: _handleNotificationResponse,
+      onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
+    );
 
     if (Platform.isAndroid) {
-      await _plugin
-          .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin
-          >()
-          ?.requestNotificationsPermission();
+      final android = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin
+      >();
+      await android?.requestNotificationsPermission();
+      await android?.requestExactAlarmsPermission();
+      await android?.requestFullScreenIntentPermission();
     }
+  }
+
+  void setActionHandler(NotificationActionHandler handler) {
+    _actionHandler = handler;
   }
 
   Future<void> scheduleMedicationReminder({
     required String scheduleId,
     required String medicationName,
     required String dosage,
-    required int timeInMinutes,
+    required DateTime scheduledFor,
   }) async {
     final id = _notificationId(scheduleId);
     await _plugin.zonedSchedule(
       id: id,
       title: 'Medication reminder',
       body: 'Time to take $medicationName ($dosage)',
-      scheduledDate: _nextInstanceOfTime(timeInMinutes),
-      notificationDetails: const NotificationDetails(
+      scheduledDate: tz.TZDateTime.from(scheduledFor, tz.local),
+      notificationDetails: NotificationDetails(
         android: AndroidNotificationDetails(
-          'medication_reminders',
-          'Medication Reminders',
-          channelDescription: 'Reminders for scheduled medication times',
-          importance: Importance.high,
-          priority: Priority.high,
+          _channelId,
+          _channelName,
+          channelDescription: _channelDescription,
+          importance: Importance.max,
+          priority: Priority.max,
+          playSound: true,
+          enableVibration: true,
+          category: AndroidNotificationCategory.alarm,
+          fullScreenIntent: true,
+          actions: <AndroidNotificationAction>[
+            AndroidNotificationAction(
+              _actionTaken,
+              'Taken',
+              showsUserInterface: true,
+            ),
+            AndroidNotificationAction(
+              _actionPostponed,
+              'Postpone',
+              showsUserInterface: true,
+            ),
+            AndroidNotificationAction(
+              _actionMissed,
+              'Missed',
+              showsUserInterface: true,
+            ),
+          ],
         ),
-        iOS: DarwinNotificationDetails(),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
       ),
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      matchDateTimeComponents: DateTimeComponents.time,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      payload: scheduleId,
     );
   }
 
@@ -64,27 +113,42 @@ class NotificationService {
     return _plugin.cancel(id: _notificationId(scheduleId));
   }
 
-  tz.TZDateTime _nextInstanceOfTime(int timeInMinutes) {
-    final now = tz.TZDateTime.now(tz.local);
-    final hour = timeInMinutes ~/ 60;
-    final minute = timeInMinutes % 60;
-    var scheduled = tz.TZDateTime(
-      tz.local,
-      now.year,
-      now.month,
-      now.day,
-      hour,
-      minute,
-    );
+  Future<void> cancelAllMedicationReminders() {
+    return _plugin.cancelAll();
+  }
 
-    if (scheduled.isBefore(now)) {
-      scheduled = scheduled.add(const Duration(days: 1));
+  void _handleNotificationResponse(NotificationResponse response) {
+    _dispatchNotificationResponse(response);
+  }
+
+  static void _dispatchNotificationResponse(NotificationResponse response) {
+    final scheduleId = response.payload;
+    if (scheduleId == null || scheduleId.isEmpty) {
+      return;
     }
 
-    return scheduled;
+    final action = switch (response.actionId) {
+      _actionTaken => 'taken',
+      _actionPostponed => 'postponed',
+      _actionMissed => 'missed',
+      _ => null,
+    };
+
+    if (action == null) {
+      return;
+    }
+
+    _actionHandler?.call(
+      NotificationAction(scheduleId: scheduleId, action: action),
+    );
   }
 
   int _notificationId(String source) {
     return source.hashCode & 0x7fffffff;
   }
+}
+
+@pragma('vm:entry-point')
+void notificationTapBackground(NotificationResponse response) {
+  NotificationService._dispatchNotificationResponse(response);
 }
