@@ -14,8 +14,6 @@ class NotificationService {
   static const _channelDescription = 'Reminders for scheduled medication times';
   static const _actionTaken = 'medication_taken';
   static const _actionPostponed = 'medication_postponed';
-  static const _actionMissed = 'medication_missed';
-
   static NotificationActionHandler? _actionHandler;
 
   final FlutterLocalNotificationsPlugin _plugin =
@@ -91,11 +89,6 @@ class NotificationService {
               'Postpone',
               showsUserInterface: true,
             ),
-            AndroidNotificationAction(
-              _actionMissed,
-              'Missed',
-              showsUserInterface: true,
-            ),
           ],
         ),
         iOS: DarwinNotificationDetails(
@@ -130,7 +123,6 @@ class NotificationService {
     final action = switch (response.actionId) {
       _actionTaken => 'taken',
       _actionPostponed => 'postponed',
-      _actionMissed => 'missed',
       _ => null,
     };
 

@@ -19,6 +19,7 @@ class MedicationSchedule {
     required this.status,
     required this.createdAt,
     required this.scheduledFor,
+    required this.isDaily,
   });
 
   final String id;
@@ -27,6 +28,7 @@ class MedicationSchedule {
   final MedicationStatus status;
   final DateTime createdAt;
   final DateTime? scheduledFor;
+  final bool isDaily;
 
   String get displayTime {
     final hour = timeInMinutes ~/ 60;
@@ -43,6 +45,7 @@ class MedicationSchedule {
     MedicationStatus? status,
     DateTime? createdAt,
     DateTime? scheduledFor,
+    bool? isDaily,
   }) {
     return MedicationSchedule(
       id: id ?? this.id,
@@ -51,6 +54,7 @@ class MedicationSchedule {
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       scheduledFor: scheduledFor ?? this.scheduledFor,
+      isDaily: isDaily ?? this.isDaily,
     );
   }
 
@@ -62,6 +66,7 @@ class MedicationSchedule {
       'status': status.name,
       'createdAt': createdAt.toIso8601String(),
       'scheduledFor': scheduledFor?.toIso8601String(),
+      'isDaily': isDaily ? 1 : 0,
     };
   }
 
@@ -77,6 +82,7 @@ class MedicationSchedule {
           DateTime.tryParse(json['createdAt'] as String? ?? '') ??
           DateTime.now(),
       scheduledFor: DateTime.tryParse(json['scheduledFor'] as String? ?? ''),
+      isDaily: (json['isDaily'] as int? ?? 0) == 1,
     );
   }
 }

@@ -164,11 +164,59 @@ class MedicationStore extends ChangeNotifier {
       status: MedicationStatus.pending,
       createdAt: DateTime.now(),
       scheduledFor: _nextReminderTime(timeInMinutes),
+      isDaily: false,
     );
     _schedules.add(schedule);
     _storage?.saveSchedules(_schedules);
     _scheduleNotification(schedule);
     notifyListeners();
+  }
+
+  void updateScheduleDetails({
+    required String scheduleId,
+    required String medicationId,
+    required int timeInMinutes,
+  }) {
+    final index = _schedules.indexWhere((item) => item.id == scheduleId);
+    if (index == -1) {
+      return;
+    }
+
+    final updatedSchedule = _schedules[index].copyWith(
+      medicationId: medicationId,
+      timeInMinutes: timeInMinutes,
+      status: MedicationStatus.pending,
+      scheduledFor: _nextReminderTime(timeInMinutes),
+    );
+
+    _schedules[index] = updatedSchedule;
+    _storage?.saveSchedules(_schedules);
+    _notifications?.cancelMedicationReminder(scheduleId);
+    _scheduleNotification(updatedSchedule);
+    notifyListeners();
+  }
+
+  void setSchedulesDaily({
+    required Iterable<String> scheduleIds,
+    required bool isDaily,
+  }) {
+    final targetIds = scheduleIds.toSet();
+    var changed = false;
+
+    for (var index = 0; index < _schedules.length; index++) {
+      final schedule = _schedules[index];
+      if (!targetIds.contains(schedule.id) || schedule.isDaily == isDaily) {
+        continue;
+      }
+
+      _schedules[index] = schedule.copyWith(isDaily: isDaily);
+      changed = true;
+    }
+
+    if (changed) {
+      _storage?.saveSchedules(_schedules);
+      notifyListeners();
+    }
   }
 
   void updateScheduleStatus(String scheduleId, MedicationStatus status) {
@@ -183,6 +231,11 @@ class MedicationStore extends ChangeNotifier {
             status: status,
             scheduledFor: _nextReminderTime(current.timeInMinutes),
           )
+        : status == MedicationStatus.postponed
+            ? current.copyWith(
+                status: status,
+                scheduledFor: DateTime.now().add(const Duration(minutes: 10)),
+              )
         : current.copyWith(status: status);
     _schedules[index] = updatedSchedule;
     if (status != MedicationStatus.pending) {
@@ -191,6 +244,8 @@ class MedicationStore extends ChangeNotifier {
     _storage?.saveSchedules(_schedules);
     _storage?.saveMedicationHistories(_histories);
     if (status == MedicationStatus.pending) {
+      _scheduleNotification(updatedSchedule);
+    } else if (status == MedicationStatus.postponed) {
       _scheduleNotification(updatedSchedule);
     } else {
       _notifications?.cancelMedicationReminder(scheduleId);
@@ -205,34 +260,44 @@ class MedicationStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Synchronizes overdue pending reminders and updates their status to missed if they are overdue.
   void syncOverduePendingReminders({DateTime? now}) {
     final currentTime = now ?? DateTime.now();
     var changed = false;
 
     for (var index = 0; index < _schedules.length; index++) {
       final schedule = _schedules[index];
-      if (schedule.status != MedicationStatus.pending) {
+      if (_findCurrentMedication(schedule.medicationId) == null) {
+        continue;
+      }
+      if (schedule.status != MedicationStatus.pending &&
+          schedule.status != MedicationStatus.postponed) {
         continue;
       }
 
-      final dueAt = schedule.scheduledFor ?? _nextReminderTime(
-        schedule.timeInMinutes,
-        currentTime,
-      );
+      final dueAt =
+          schedule.scheduledFor ??
+          _nextReminderTime(schedule.timeInMinutes, currentTime);
+      final graceMinutes = schedule.status == MedicationStatus.postponed ? 10 : 5;
 
       if (schedule.scheduledFor == null) {
         _schedules[index] = schedule.copyWith(scheduledFor: dueAt);
         changed = true;
       }
 
-      if (!currentTime.isBefore(dueAt.add(const Duration(minutes: 5)))) {
+      if (!currentTime.isBefore(dueAt.add(Duration(minutes: graceMinutes)))) {
         _schedules[index] = _schedules[index].copyWith(
           status: MedicationStatus.missed,
+          scheduledFor: dueAt,
         );
         _addHistory(_schedules[index], MedicationStatus.missed);
         _notifications?.cancelMedicationReminder(schedule.id);
         changed = true;
       }
+    }
+
+    if (_syncDailyReminders(currentTime)) {
+      changed = true;
     }
 
     if (changed) {
@@ -264,8 +329,8 @@ class MedicationStore extends ChangeNotifier {
       return;
     }
 
-    final scheduledFor = schedule.scheduledFor ??
-        _nextReminderTime(schedule.timeInMinutes);
+    final scheduledFor =
+        schedule.scheduledFor ?? _nextReminderTime(schedule.timeInMinutes);
 
     _notifications?.scheduleMedicationReminder(
       scheduleId: schedule.id,
@@ -281,10 +346,9 @@ class MedicationStore extends ChangeNotifier {
     for (final schedule in _schedules) {
       if (schedule.status == MedicationStatus.pending &&
           _findCurrentMedication(schedule.medicationId) != null) {
-        final dueAt = schedule.scheduledFor ?? _nextReminderTime(
-          schedule.timeInMinutes,
-          now,
-        );
+        final dueAt =
+            schedule.scheduledFor ??
+            _nextReminderTime(schedule.timeInMinutes, now);
         if (schedule.scheduledFor == null) {
           final index = _schedules.indexWhere((item) => item.id == schedule.id);
           if (index != -1) {
@@ -301,6 +365,50 @@ class MedicationStore extends ChangeNotifier {
     if (changed) {
       _storage?.saveSchedules(_schedules);
     }
+  }
+
+  bool _syncDailyReminders(DateTime now) {
+    var changed = false;
+
+    for (var index = 0; index < _schedules.length; index++) {
+      final schedule = _schedules[index];
+      if (!schedule.isDaily) {
+        continue;
+      }
+      if (_findCurrentMedication(schedule.medicationId) == null) {
+        continue;
+      }
+
+      final dueAt = _nextReminderTime(schedule.timeInMinutes, now);
+      final scheduledFor = schedule.scheduledFor;
+      final needsReset =
+          scheduledFor == null ||
+          !_isSameDay(scheduledFor, now) ||
+          (!_isSameDay(scheduledFor, dueAt) &&
+              (schedule.status == MedicationStatus.pending ||
+                  schedule.status == MedicationStatus.postponed));
+
+      if (!needsReset) {
+        continue;
+      }
+
+      _schedules[index] = schedule.copyWith(
+        status: MedicationStatus.pending,
+        scheduledFor: dueAt,
+      );
+      _notifications?.cancelMedicationReminder(schedule.id);
+      final medication = _findCurrentMedication(schedule.medicationId);
+      if (medication != null && medication.isActive && dueAt.isAfter(now)) {
+        _scheduleNotification(_schedules[index]);
+      }
+      changed = true;
+    }
+
+    return changed;
+  }
+
+  bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
   void _handleNotificationAction(NotificationAction action) {
@@ -322,13 +430,7 @@ class MedicationStore extends ChangeNotifier {
     final now = reference ?? DateTime.now();
     final hour = timeInMinutes ~/ 60;
     final minute = timeInMinutes % 60;
-    var scheduled = DateTime(
-      now.year,
-      now.month,
-      now.day,
-      hour,
-      minute,
-    );
+    var scheduled = DateTime(now.year, now.month, now.day, hour, minute);
 
     if (scheduled.isBefore(now)) {
       scheduled = scheduled.add(const Duration(days: 1));

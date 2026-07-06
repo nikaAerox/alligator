@@ -22,7 +22,7 @@ class SqliteStorageService implements AppStorageService {
   );
 
   static const _databaseName = 'medicare.db';
-  static const _databaseVersion = 5;
+  static const _databaseVersion = 6;
 
   static const _medicationsTable = 'medications';
   static const _schedulesTable = 'medication_schedules';
@@ -81,6 +81,7 @@ class SqliteStorageService implements AppStorageService {
         status TEXT NOT NULL,
         createdAt TEXT NOT NULL,
         scheduledFor TEXT,
+        isDaily INTEGER NOT NULL DEFAULT 0,
         FOREIGN KEY (medicationId)
           REFERENCES $_medicationsTable (id)
           ON DELETE CASCADE
@@ -120,6 +121,13 @@ class SqliteStorageService implements AppStorageService {
     }
     if (oldVersion < 5) {
       await _addColumnIfMissing(db, _schedulesTable, 'scheduledFor TEXT');
+    }
+    if (oldVersion < 6) {
+      await _addColumnIfMissing(
+        db,
+        _schedulesTable,
+        'isDaily INTEGER NOT NULL DEFAULT 0',
+      );
     }
   }
 
@@ -360,6 +368,7 @@ class SqliteStorageService implements AppStorageService {
       'status': schedule.status.name,
       'createdAt': schedule.createdAt.toIso8601String(),
       'scheduledFor': schedule.scheduledFor?.toIso8601String(),
+      'isDaily': schedule.isDaily ? 1 : 0,
     };
   }
 
@@ -371,6 +380,7 @@ class SqliteStorageService implements AppStorageService {
       status: MedicationStatus.values.byName(row['status']! as String),
       createdAt: DateTime.parse(row['createdAt']! as String),
       scheduledFor: DateTime.tryParse(row['scheduledFor'] as String? ?? ''),
+      isDaily: (row['isDaily'] as int? ?? 0) == 1,
     );
   }
 

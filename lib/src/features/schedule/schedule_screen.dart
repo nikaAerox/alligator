@@ -6,25 +6,112 @@ import '../../core/state/medication_store.dart';
 import '../../shared/widgets/pressable_scale.dart';
 import '../../theme/app_theme.dart';
 
-class ScheduleScreen extends StatelessWidget {
+class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key});
 
   @override
+  State<ScheduleScreen> createState() => _ScheduleScreenState();
+}
+
+class _ScheduleScreenState extends State<ScheduleScreen> {
+  final Set<String> _selectedScheduleIds = <String>{};
+
+  @override
   Widget build(BuildContext context) {
-    final schedules = context.watch<MedicationStore>().scheduledMedications;
+    final store = context.watch<MedicationStore>();
+    final schedules = store.scheduledMedications;
+    final selectedSchedules = schedules
+        .where((item) => _selectedScheduleIds.contains(item.schedule.id))
+        .toList();
+    final allSelectedAreDaily =
+        selectedSchedules.isNotEmpty &&
+        selectedSchedules.every((item) => item.schedule.isDaily);
+    final dailyButtonLabel = allSelectedAreDaily
+        ? 'Remove Daily'
+        : 'Remind Daily';
+    final dailyButtonIcon = allSelectedAreDaily
+        ? Icons.repeat_on_outlined
+        : Icons.repeat;
 
     return Stack(
       children: [
-        schedules.isEmpty
-            ? const _EmptyScheduleState()
-            : ListView.separated(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 92),
-                itemBuilder: (context, index) {
-                  return _ScheduleCard(item: schedules[index]);
-                },
-                separatorBuilder: (_, _) => const SizedBox(height: 12),
-                itemCount: schedules.length,
+        Padding(
+          padding: const EdgeInsets.fromLTRB(0, 0, 0, 92),
+          child: Column(
+            children: [
+              if (_selectedScheduleIds.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+                  child: PressableScale(
+                    child: FilledButton.icon(
+                      onPressed: () {
+                        if (_selectedScheduleIds.isEmpty) {
+                          return;
+                        }
+                        store.setSchedulesDaily(
+                          scheduleIds: _selectedScheduleIds,
+                          isDaily: !allSelectedAreDaily,
+                        );
+                        setState(() => _selectedScheduleIds.clear());
+                      },
+                      icon: Icon(dailyButtonIcon),
+                      label: Text(dailyButtonLabel),
+                    ),
+                  ),
+                ),
+              Expanded(
+                child: schedules.isEmpty
+                    ? const _EmptyScheduleState()
+                    : ListView.separated(
+                        padding: EdgeInsets.fromLTRB(
+                          16,
+                          _selectedScheduleIds.isNotEmpty ? 14 : 14,
+                          16,
+                          92,
+                        ),
+                        itemBuilder: (context, index) {
+                          final item = schedules[index];
+                          return _ScheduleCard(
+                            item: item,
+                            selected: _selectedScheduleIds.contains(
+                              item.schedule.id,
+                            ),
+                            onToggleSelected: () {
+                              setState(() {
+                                if (!_selectedScheduleIds.remove(
+                                  item.schedule.id,
+                                )) {
+                                  _selectedScheduleIds.add(item.schedule.id);
+                                }
+                              });
+                            },
+                            onEdit: () => _openScheduleForm(
+                              context,
+                              existing: item,
+                            ),
+                            onSetPending: () {
+                              store.updateScheduleStatus(
+                                item.schedule.id,
+                                MedicationStatus.pending,
+                              );
+                            },
+                            onDelete: () {
+                              store.deleteSchedule(item.schedule.id);
+                              setState(
+                                () => _selectedScheduleIds.remove(
+                                  item.schedule.id,
+                                ),
+                              );
+                            },
+                          );
+                        },
+                        separatorBuilder: (_, _) => const SizedBox(height: 12),
+                        itemCount: schedules.length,
+                      ),
               ),
+            ],
+          ),
+        ),
         Positioned(
           right: 16,
           bottom: 18,
@@ -42,12 +129,15 @@ class ScheduleScreen extends StatelessWidget {
     );
   }
 
-  void _openScheduleForm(BuildContext context) {
+  void _openScheduleForm(
+    BuildContext context, {
+    ScheduledMedication? existing,
+  }) {
     final medications = context.read<MedicationStore>().medications;
     if (medications.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Add a medication first')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Add a medication first')),
+      );
       return;
     }
 
@@ -55,15 +145,27 @@ class ScheduleScreen extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (_) => const ScheduleFormSheet(),
+      builder: (_) => ScheduleFormSheet(existing: existing),
     );
   }
 }
 
 class _ScheduleCard extends StatelessWidget {
-  const _ScheduleCard({required this.item});
+  const _ScheduleCard({
+    required this.item,
+    required this.selected,
+    required this.onToggleSelected,
+    required this.onEdit,
+    required this.onSetPending,
+    required this.onDelete,
+  });
 
   final ScheduledMedication item;
+  final bool selected;
+  final VoidCallback onToggleSelected;
+  final VoidCallback onEdit;
+  final VoidCallback onSetPending;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -94,35 +196,84 @@ class _ScheduleCard extends StatelessWidget {
             schedule.displayTime,
             style: const TextStyle(fontWeight: FontWeight.w800),
           ),
-          subtitle: Text('${medication.name} - ${medication.dosage}'),
-          trailing: PopupMenuButton<_ScheduleAction>(
-            tooltip: 'Schedule actions',
-            onSelected: (action) {
-              final store = context.read<MedicationStore>();
-              switch (action) {
-                case _ScheduleAction.pending:
-                  store.updateScheduleStatus(
-                    schedule.id,
-                    MedicationStatus.pending,
-                  );
-                case _ScheduleAction.delete:
-                  store.deleteSchedule(schedule.id);
-              }
-            },
-            itemBuilder: (context) => const [
-              PopupMenuItem(
-                value: _ScheduleAction.pending,
-                child: _ScheduleMenuPill(label: 'Set pending'),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('${medication.name} - ${medication.dosage}'),
+              if (schedule.isDaily)
+                const Padding(
+                  padding: EdgeInsets.only(top: 4),
+                  child: _DailyChip(),
+                ),
+            ],
+          ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                tooltip: selected ? 'Unselect reminder' : 'Select reminder',
+                onPressed: onToggleSelected,
+                icon: Icon(
+                  selected
+                      ? Icons.check_box
+                      : Icons.check_box_outline_blank,
+                ),
               ),
-              PopupMenuItem(
-                value: _ScheduleAction.delete,
-                child: _ScheduleMenuPill(label: 'Delete'),
+              PopupMenuButton<_ScheduleAction>(
+                tooltip: 'Schedule actions',
+                onSelected: (action) {
+                  switch (action) {
+                    case _ScheduleAction.edit:
+                      onEdit();
+                      break;
+                    case _ScheduleAction.pending:
+                      onSetPending();
+                      break;
+                    case _ScheduleAction.delete:
+                      onDelete();
+                      break;
+                  }
+                },
+                itemBuilder: (context) => const [
+                  PopupMenuItem(
+                    value: _ScheduleAction.edit,
+                    child: _ScheduleMenuPill(label: 'Edit'),
+                  ),
+                  PopupMenuItem(
+                    value: _ScheduleAction.pending,
+                    child: _ScheduleMenuPill(label: 'Set pending'),
+                  ),
+                  PopupMenuItem(
+                    value: _ScheduleAction.delete,
+                    child: _ScheduleMenuPill(label: 'Delete'),
+                  ),
+                ],
+                child: _StatusChip(status: schedule.status),
               ),
             ],
-            child: _StatusChip(status: schedule.status),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _DailyChip extends StatelessWidget {
+  const _DailyChip();
+
+  @override
+  Widget build(BuildContext context) {
+    return Chip(
+      label: const Text('Daily'),
+      side: BorderSide.none,
+      backgroundColor: AppTheme.primary.withValues(alpha: 0.14),
+      labelStyle: const TextStyle(
+        color: AppTheme.primary,
+        fontWeight: FontWeight.w700,
+        fontSize: 12,
+      ),
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
     );
   }
 }
@@ -209,7 +360,9 @@ class _EmptyScheduleState extends StatelessWidget {
 }
 
 class ScheduleFormSheet extends StatefulWidget {
-  const ScheduleFormSheet({super.key});
+  const ScheduleFormSheet({super.key, this.existing});
+
+  final ScheduledMedication? existing;
 
   @override
   State<ScheduleFormSheet> createState() => _ScheduleFormSheetState();
@@ -217,7 +370,19 @@ class ScheduleFormSheet extends StatefulWidget {
 
 class _ScheduleFormSheetState extends State<ScheduleFormSheet> {
   String? _medicationId;
-  TimeOfDay _time = const TimeOfDay(hour: 8, minute: 0);
+  late TimeOfDay _time;
+
+  @override
+  void initState() {
+    super.initState();
+    final existing = widget.existing;
+    _medicationId = existing?.medication.id ?? existing?.schedule.medicationId;
+    final initialMinutes = existing?.schedule.timeInMinutes ?? 8 * 60;
+    _time = TimeOfDay(
+      hour: initialMinutes ~/ 60,
+      minute: initialMinutes % 60,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -225,6 +390,7 @@ class _ScheduleFormSheetState extends State<ScheduleFormSheet> {
     _medicationId ??= medications.firstOrNull?.id;
 
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final isEditing = widget.existing != null;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 18, 20, 20 + bottomInset),
@@ -233,7 +399,7 @@ class _ScheduleFormSheetState extends State<ScheduleFormSheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Add Reminder',
+            isEditing ? 'Edit Reminder' : 'Add Reminder',
             style: Theme.of(
               context,
             ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
@@ -260,15 +426,15 @@ class _ScheduleFormSheetState extends State<ScheduleFormSheet> {
             child: OutlinedButton.icon(
               onPressed: _pickTime,
               icon: const Icon(Icons.schedule),
-              label: Text('Time: ${_time.format(context)}'),
+              label: Text('Time: ${_displayTime()}'),
             ),
           ),
           const SizedBox(height: 22),
           PressableScale(
             child: ElevatedButton.icon(
               onPressed: _save,
-              icon: const Icon(Icons.alarm_add),
-              label: const Text('Add Reminder'),
+              icon: Icon(isEditing ? Icons.save : Icons.alarm_add),
+              label: Text(isEditing ? 'Update Reminder' : 'Add Reminder'),
             ),
           ),
         ],
@@ -276,8 +442,24 @@ class _ScheduleFormSheetState extends State<ScheduleFormSheet> {
     );
   }
 
+  String _displayTime() {
+    final hour = _time.hourOfPeriod == 0 ? 12 : _time.hourOfPeriod;
+    final minute = _time.minute.toString().padLeft(2, '0');
+    final period = _time.period == DayPeriod.am ? 'AM' : 'PM';
+    return '$hour:$minute $period';
+  }
+
   Future<void> _pickTime() async {
-    final selected = await showTimePicker(context: context, initialTime: _time);
+    final selected = await showTimePicker(
+      context: context,
+      initialTime: _time,
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: false),
+          child: child!,
+        );
+      },
+    );
 
     if (selected != null) {
       setState(() => _time = selected);
@@ -290,12 +472,24 @@ class _ScheduleFormSheetState extends State<ScheduleFormSheet> {
       return;
     }
 
-    context.read<MedicationStore>().addSchedule(
-      medicationId: medicationId,
-      timeInMinutes: _time.hour * 60 + _time.minute,
-    );
+    final store = context.read<MedicationStore>();
+    final timeInMinutes = _time.hour * 60 + _time.minute;
+
+    if (widget.existing == null) {
+      store.addSchedule(
+        medicationId: medicationId,
+        timeInMinutes: timeInMinutes,
+      );
+    } else {
+      store.updateScheduleDetails(
+        scheduleId: widget.existing!.schedule.id,
+        medicationId: medicationId,
+        timeInMinutes: timeInMinutes,
+      );
+    }
+
     Navigator.of(context).pop();
   }
 }
 
-enum _ScheduleAction { pending, delete }
+enum _ScheduleAction { edit, pending, delete }
