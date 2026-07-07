@@ -268,27 +268,34 @@ class _HomeTabState extends State<_HomeTab> {
   Widget build(BuildContext context) {
     final medicationStore = context.watch<MedicationStore>();
     final healthStore = context.watch<HealthStore>();
+    final contentTextColor = _contentTextColor(context);
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
-      children: [
-        _AdherenceCard(schedules: medicationStore.scheduledMedications),
-        const SizedBox(height: 14),
-        _NextDoseCard(schedules: medicationStore.scheduledMedications),
-        const SizedBox(height: 14),
-        _HealthSnapshotCard(records: healthStore.records),
-        const SizedBox(height: 14),
-        _MedicationHistoryReport(
-          histories: medicationStore.medicationHistories,
-          period: _period,
-          onPeriodChanged: (period) => setState(() => _period = period),
+    return DefaultTextStyle.merge(
+      style: TextStyle(color: contentTextColor),
+      child: IconTheme.merge(
+        data: IconThemeData(color: contentTextColor),
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
+          children: [
+            _AdherenceCard(schedules: medicationStore.scheduledMedications),
+            const SizedBox(height: 14),
+            _NextDoseCard(schedules: medicationStore.scheduledMedications),
+            const SizedBox(height: 14),
+            _HealthSnapshotCard(records: healthStore.records),
+            const SizedBox(height: 14),
+            _MedicationHistoryReport(
+              histories: medicationStore.medicationHistories,
+              period: _period,
+              onPeriodChanged: (period) => setState(() => _period = period),
+            ),
+            const SizedBox(height: 14),
+            _SuggestionCard(
+              schedules: medicationStore.scheduledMedications,
+              records: healthStore.records,
+            ),
+          ],
         ),
-        const SizedBox(height: 14),
-        _SuggestionCard(
-          schedules: medicationStore.scheduledMedications,
-          records: healthStore.records,
-        ),
-      ],
+      ),
     );
   }
 }
@@ -525,6 +532,7 @@ class _HealthSnapshotCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textColor = _contentTextColor(context);
     return Card(
       color: const Color(0xFFFCF6ED),
       elevation: 3,
@@ -579,6 +587,7 @@ class _SuggestionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textColor = _contentTextColor(context);
     final suggestions = [
       _medicationSuggestion(schedules),
       ...records.map(_healthSuggestion),
@@ -594,19 +603,23 @@ class _SuggestionCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
               children: [
                 Icon(Icons.lightbulb_outline, color: AppTheme.primary),
                 SizedBox(width: 8),
                 Text(
                   'Reports & Suggestions',
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 18,
+                    color: textColor,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
             for (final suggestion in suggestions) ...[
-              Text(suggestion),
+              Text(suggestion, style: TextStyle(color: textColor)),
               const SizedBox(height: 8),
             ],
           ],
@@ -629,6 +642,7 @@ class _MedicationHistoryReport extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textColor = _contentTextColor(context);
     final filtered = _filterHistories(histories, period);
     final taken = _countStatus(filtered, MedicationStatus.taken);
     final missed = _countStatus(filtered, MedicationStatus.missed);
@@ -688,7 +702,7 @@ class _MedicationHistoryReport extends StatelessWidget {
                   if (states.contains(WidgetState.selected)) {
                     return Colors.white;
                   }
-                  return AppTheme.ink;
+                  return textColor;
                 }),
               ),
             ),
@@ -820,6 +834,7 @@ class _LegendItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textColor = _contentTextColor(context);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -829,7 +844,10 @@ class _LegendItem extends StatelessWidget {
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 5),
-        Text('$label: $count', style: const TextStyle(fontSize: 12)),
+        Text(
+          '$label: $count',
+          style: TextStyle(fontSize: 12, color: textColor),
+        ),
       ],
     );
   }
@@ -842,6 +860,7 @@ class _HistoryListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textColor = _contentTextColor(context);
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
@@ -853,7 +872,7 @@ class _HistoryListItem extends StatelessWidget {
           Expanded(
             child: Text(
               '${history.medicationName} - ${history.dosage}',
-              style: const TextStyle(fontWeight: FontWeight.w700),
+              style: TextStyle(fontWeight: FontWeight.w700, color: textColor),
             ),
           ),
           _StatusMiniBadge(status: history.status),
@@ -901,7 +920,7 @@ class _EmptyHistoryReport extends StatelessWidget {
       child: Center(
         child: Text(
           'No intake history for this period yet.',
-          style: TextStyle(color: Color(0xFF627174)),
+          style: TextStyle(color: Colors.black),
         ),
       ),
     );
@@ -916,6 +935,7 @@ class _MetricTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textColor = _contentTextColor(context);
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -925,13 +945,20 @@ class _MetricTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(color: Color(0xFF627174))),
+          Text(
+            label,
+            style: TextStyle(color: textColor.withValues(alpha: 0.72)),
+          ),
           const SizedBox(height: 6),
           Text(
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 18,
+              color: textColor,
+            ),
           ),
         ],
       ),
@@ -963,6 +990,12 @@ String _adherenceMessage(double value) {
 String _valueFor(List<HealthRecord> records, HealthRecordType type) {
   final record = records.where((item) => item.type == type).firstOrNull;
   return record?.value ?? '-';
+}
+
+Color _contentTextColor(BuildContext context) {
+  return Theme.of(context).brightness == Brightness.dark
+      ? Colors.black
+      : AppTheme.ink;
 }
 
 List<MedicationHistory> _filterHistories(

@@ -22,7 +22,7 @@ class SqliteStorageService implements AppStorageService {
   );
 
   static const _databaseName = 'medicare.db';
-  static const _databaseVersion = 6;
+  static const _databaseVersion = 7;
 
   static const _medicationsTable = 'medications';
   static const _schedulesTable = 'medication_schedules';
@@ -128,6 +128,9 @@ class SqliteStorageService implements AppStorageService {
         _schedulesTable,
         'isDaily INTEGER NOT NULL DEFAULT 0',
       );
+    }
+    if (oldVersion < 7) {
+      await _addColumnIfMissing(db, _schedulesTable, 'patientId TEXT');
     }
   }
 
@@ -363,6 +366,7 @@ class SqliteStorageService implements AppStorageService {
   Map<String, Object?> _scheduleToRow(MedicationSchedule schedule) {
     return {
       'id': schedule.id,
+      'patientId': schedule.patientId,
       'medicationId': schedule.medicationId,
       'timeInMinutes': schedule.timeInMinutes,
       'status': schedule.status.name,
@@ -373,8 +377,12 @@ class SqliteStorageService implements AppStorageService {
   }
 
   MedicationSchedule _scheduleFromRow(Map<String, Object?> row) {
+    final medicationPatientId = _patientIdForMedication(
+      row['medicationId']! as String,
+    );
     return MedicationSchedule(
       id: row['id']! as String,
+      patientId: row['patientId'] as String? ?? medicationPatientId,
       medicationId: row['medicationId']! as String,
       timeInMinutes: row['timeInMinutes']! as int,
       status: MedicationStatus.values.byName(row['status']! as String),
@@ -452,5 +460,14 @@ class SqliteStorageService implements AppStorageService {
       password: row['password']! as String,
       createdAt: DateTime.parse(row['createdAt']! as String),
     );
+  }
+
+  String _patientIdForMedication(String medicationId) {
+    for (final medication in _medications) {
+      if (medication.id == medicationId) {
+        return medication.patientId;
+      }
+    }
+    return _currentPatientId ?? '';
   }
 }

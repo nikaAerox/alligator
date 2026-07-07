@@ -12,6 +12,7 @@ class AppTheme {
   static const Color ink = Color(0xFF172326);
   static const Color button = Color(0xFF5D8490);
 
+  // Light Theme
   static ThemeData get light {
     final colorScheme = ColorScheme.fromSeed(
       seedColor: primary,
@@ -100,6 +101,7 @@ class AppTheme {
     );
   }
 
+  // Dark Theme
   static ThemeData get dark {
     final colorScheme = ColorScheme.fromSeed(
       seedColor: primary,

@@ -29,6 +29,7 @@ class _MedicationScreenState extends State<MedicationScreen> {
   @override
   Widget build(BuildContext context) {
     final medications = context.watch<MedicationStore>().medications;
+    final contentTextColor = _contentTextColor(context);
     final filteredMedications = medications.where((medication) {
       final query = _query.trim().toLowerCase();
       if (query.isEmpty) {
@@ -39,45 +40,53 @@ class _MedicationScreenState extends State<MedicationScreen> {
           medication.quantity.toLowerCase().contains(query);
     }).toList();
 
-    return Stack(
-      children: [
-        ListView.separated(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 92),
-          itemBuilder: (context, index) {
-            if (index == 0) {
-              return _MedicationSearchBar(
-                controller: _searchController,
-                onChanged: (value) => setState(() => _query = value),
-              );
-            }
+    return DefaultTextStyle.merge(
+      style: TextStyle(color: contentTextColor),
+      child: IconTheme.merge(
+        data: IconThemeData(color: contentTextColor),
+        child: Stack(
+          children: [
+            ListView.separated(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 92),
+              itemBuilder: (context, index) {
+                if (index == 0) {
+                  return _MedicationSearchBar(
+                    controller: _searchController,
+                    onChanged: (value) => setState(() => _query = value),
+                  );
+                }
 
-            if (filteredMedications.isEmpty) {
-              return _query.trim().isEmpty
-                  ? const _EmptyMedicationState()
-                  : const _NoSearchResultsState();
-            }
+                if (filteredMedications.isEmpty) {
+                  return _query.trim().isEmpty
+                      ? const _EmptyMedicationState()
+                      : const _NoSearchResultsState();
+                }
 
-            return _MedicationCard(medication: filteredMedications[index - 1]);
-          },
-          separatorBuilder: (_, _) => const SizedBox(height: 14),
-          itemCount: filteredMedications.isEmpty
-              ? 2
-              : filteredMedications.length + 1,
-        ),
-        Positioned(
-          right: 16,
-          bottom: 18,
-          child: PressableScale(
-            child: FloatingActionButton.extended(
-              heroTag: 'medication_add_button',
-              onPressed: _handleAddPressed,
-              extendedPadding: const EdgeInsets.symmetric(horizontal: 24),
-              icon: const Icon(Icons.add),
-              label: const Text('Add'),
+                return _MedicationCard(
+                  medication: filteredMedications[index - 1],
+                );
+              },
+              separatorBuilder: (_, _) => const SizedBox(height: 14),
+              itemCount: filteredMedications.isEmpty
+                  ? 2
+                  : filteredMedications.length + 1,
             ),
-          ),
+            Positioned(
+              right: 16,
+              bottom: 18,
+              child: PressableScale(
+                child: FloatingActionButton.extended(
+                  heroTag: 'medication_add_button',
+                  onPressed: _handleAddPressed,
+                  extendedPadding: const EdgeInsets.symmetric(horizontal: 24),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add'),
+                ),
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -109,12 +118,18 @@ class _MedicationSearchBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final contentTextColor = _contentTextColor(context);
     return TextField(
       controller: controller,
       onChanged: onChanged,
+      style: TextStyle(color: contentTextColor),
+      cursorColor: contentTextColor,
       decoration: InputDecoration(
         hintText: 'Search',
         prefixIcon: const Icon(Icons.search),
+        hintStyle: TextStyle(
+          color: contentTextColor.withValues(alpha: 0.72),
+        ),
         suffixIcon: controller.text.isEmpty
             ? null
             : IconButton(
@@ -183,11 +198,14 @@ class _MedicationCard extends StatelessWidget {
                                 context: context,
                                 isScrollControlled: true,
                                 useSafeArea: true,
-                                builder: (_) =>
-                                    MedicationFormSheet(medication: medication),
+                                builder: (_) => MedicationFormSheet(
+                                  medication: medication,
+                                ),
                               );
+                              break;
                             case _MedicationAction.delete:
                               _confirmDelete(context, medication);
+                              break;
                           }
                         },
                         itemBuilder: (context) => const [
@@ -226,8 +244,8 @@ class _MedicationCard extends StatelessWidget {
                       medication.instructions,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFF495255),
+                      style: TextStyle(
+                        color: _contentTextColor(context).withValues(alpha: 0.72),
                         fontSize: 13,
                       ),
                     ),
@@ -354,6 +372,7 @@ class _MedicationDetail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final contentTextColor = _contentTextColor(context);
     return Padding(
       padding: const EdgeInsets.only(top: 3),
       child: Text.rich(
@@ -366,7 +385,11 @@ class _MedicationDetail extends StatelessWidget {
             TextSpan(text: value),
           ],
         ),
-        style: const TextStyle(fontSize: 15, height: 1.2),
+        style: TextStyle(
+          fontSize: 15,
+          height: 1.2,
+          color: contentTextColor,
+        ),
       ),
     );
   }
@@ -421,7 +444,7 @@ class _EmptyMedicationState extends StatelessWidget {
             Text(
               'Add your first medication so MediCare can help track your routine.',
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: TextStyle(color: _contentTextColor(context)),
             ),
           ],
         ),
@@ -440,7 +463,11 @@ class _NoSearchResultsState extends StatelessWidget {
       child: Center(
         child: Text(
           'No medication found',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: Colors.black,
+          ),
         ),
       ),
     );
@@ -774,3 +801,9 @@ class _ImagePickerPanel extends StatelessWidget {
 }
 
 enum _MedicationAction { edit, delete }
+
+Color _contentTextColor(BuildContext context) {
+  return Theme.of(context).brightness == Brightness.dark
+      ? Colors.black
+      : AppTheme.ink;
+}

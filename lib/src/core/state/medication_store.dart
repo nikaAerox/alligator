@@ -159,6 +159,7 @@ class MedicationStore extends ChangeNotifier {
     }
     final schedule = MedicationSchedule(
       id: 'schedule-${DateTime.now().microsecondsSinceEpoch}',
+      patientId: _currentPatientId!,
       medicationId: medicationId,
       timeInMinutes: timeInMinutes,
       status: MedicationStatus.pending,
@@ -183,6 +184,9 @@ class MedicationStore extends ChangeNotifier {
     }
 
     final updatedSchedule = _schedules[index].copyWith(
+      patientId: _schedules[index].patientId.isEmpty
+          ? _currentPatientId
+          : _schedules[index].patientId,
       medicationId: medicationId,
       timeInMinutes: timeInMinutes,
       status: MedicationStatus.pending,
@@ -225,6 +229,7 @@ class MedicationStore extends ChangeNotifier {
       return;
     }
 
+    // Update the schedule status and handle notifications accordingly
     final current = _schedules[index];
     final updatedSchedule = status == MedicationStatus.pending
         ? current.copyWith(
@@ -234,7 +239,9 @@ class MedicationStore extends ChangeNotifier {
         : status == MedicationStatus.postponed
         ? current.copyWith(
             status: status,
-            scheduledFor: DateTime.now().add(const Duration(minutes: 10)),
+            scheduledFor: DateTime.now().add(
+              const Duration(minutes: 1),
+            ), // Schedule for 1 minute later when postponed
           )
         : current.copyWith(status: status);
     _schedules[index] = updatedSchedule;
@@ -279,8 +286,8 @@ class MedicationStore extends ChangeNotifier {
           schedule.scheduledFor ??
           _nextReminderTime(schedule.timeInMinutes, currentTime);
       final graceMinutes = schedule.status == MedicationStatus.postponed
-          ? 10
-          : 5;
+          ? 1
+          : 1; // 1 minute postponed, 1 minute missed (no action taken)
 
       if (schedule.scheduledFor == null) {
         _schedules[index] = schedule.copyWith(scheduledFor: dueAt);

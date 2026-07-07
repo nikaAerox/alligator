@@ -19,6 +19,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   @override
   Widget build(BuildContext context) {
     final store = context.watch<MedicationStore>();
+    final contentTextColor = _contentTextColor(context);
     final schedules = store.scheduledMedications;
     final selectedSchedules = schedules
         .where((item) => _selectedScheduleIds.contains(item.schedule.id))
@@ -33,99 +34,104 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         ? Icons.repeat_on_outlined
         : Icons.repeat;
 
-    return Stack(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(0, 0, 0, 92),
-          child: Column(
-            children: [
-              if (_selectedScheduleIds.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-                  child: PressableScale(
-                    child: FilledButton.icon(
-                      onPressed: () {
-                        if (_selectedScheduleIds.isEmpty) {
-                          return;
-                        }
-                        store.setSchedulesDaily(
-                          scheduleIds: _selectedScheduleIds,
-                          isDaily: !allSelectedAreDaily,
-                        );
-                        setState(() => _selectedScheduleIds.clear());
-                      },
-                      icon: Icon(dailyButtonIcon),
-                      label: Text(dailyButtonLabel),
-                    ),
-                  ),
-                ),
-              Expanded(
-                child: schedules.isEmpty
-                    ? const _EmptyScheduleState()
-                    : ListView.separated(
-                        padding: EdgeInsets.fromLTRB(
-                          16,
-                          _selectedScheduleIds.isNotEmpty ? 14 : 14,
-                          16,
-                          92,
+    return DefaultTextStyle.merge(
+      style: TextStyle(color: contentTextColor),
+      child: IconTheme.merge(
+        data: IconThemeData(color: contentTextColor),
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(0, 0, 0, 92),
+              child: Column(
+                children: [
+                  if (_selectedScheduleIds.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+                      child: PressableScale(
+                        child: FilledButton.icon(
+                          onPressed: () {
+                            if (_selectedScheduleIds.isEmpty) {
+                              return;
+                            }
+                            store.setSchedulesDaily(
+                              scheduleIds: _selectedScheduleIds,
+                              isDaily: !allSelectedAreDaily,
+                            );
+                            setState(() => _selectedScheduleIds.clear());
+                          },
+                          icon: Icon(dailyButtonIcon),
+                          label: Text(dailyButtonLabel),
                         ),
-                        itemBuilder: (context, index) {
-                          final item = schedules[index];
-                          return _ScheduleCard(
-                            item: item,
-                            selected: _selectedScheduleIds.contains(
-                              item.schedule.id,
+                      ),
+                    ),
+                  Expanded(
+                    child: schedules.isEmpty
+                        ? const _EmptyScheduleState()
+                        : ListView.separated(
+                            padding: EdgeInsets.fromLTRB(
+                              16,
+                              _selectedScheduleIds.isNotEmpty ? 14 : 14,
+                              16,
+                              92,
                             ),
-                            onToggleSelected: () {
-                              setState(() {
-                                if (!_selectedScheduleIds.remove(
-                                  item.schedule.id,
-                                )) {
-                                  _selectedScheduleIds.add(item.schedule.id);
-                                }
-                              });
-                            },
-                            onEdit: () => _openScheduleForm(
-                              context,
-                              existing: item,
-                            ),
-                            onSetPending: () {
-                              store.updateScheduleStatus(
-                                item.schedule.id,
-                                MedicationStatus.pending,
-                              );
-                            },
-                            onDelete: () {
-                              store.deleteSchedule(item.schedule.id);
-                              setState(
-                                () => _selectedScheduleIds.remove(
+                            itemBuilder: (context, index) {
+                              final item = schedules[index];
+                              return _ScheduleCard(
+                                item: item,
+                                selected: _selectedScheduleIds.contains(
                                   item.schedule.id,
                                 ),
+                                onToggleSelected: () {
+                                  setState(() {
+                                    if (!_selectedScheduleIds.remove(
+                                      item.schedule.id,
+                                    )) {
+                                      _selectedScheduleIds.add(item.schedule.id);
+                                    }
+                                  });
+                                },
+                                onEdit: () =>
+                                    _openScheduleForm(context, existing: item),
+                                onSetPending: () {
+                                  store.updateScheduleStatus(
+                                    item.schedule.id,
+                                    MedicationStatus.pending,
+                                  );
+                                },
+                                onDelete: () {
+                                  store.deleteSchedule(item.schedule.id);
+                                  setState(
+                                    () => _selectedScheduleIds.remove(
+                                      item.schedule.id,
+                                    ),
+                                  );
+                                },
                               );
                             },
-                          );
-                        },
-                        separatorBuilder: (_, _) => const SizedBox(height: 12),
-                        itemCount: schedules.length,
-                      ),
+                            separatorBuilder: (_, _) =>
+                                const SizedBox(height: 12),
+                            itemCount: schedules.length,
+                          ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
-        Positioned(
-          right: 16,
-          bottom: 18,
-          child: PressableScale(
-            child: FloatingActionButton.extended(
-              heroTag: 'schedule_add_button',
-              onPressed: () => _openScheduleForm(context),
-              extendedPadding: const EdgeInsets.symmetric(horizontal: 24),
-              icon: const Icon(Icons.alarm_add),
-              label: const Text('Reminder'),
             ),
-          ),
+            Positioned(
+              right: 16,
+              bottom: 18,
+              child: PressableScale(
+                child: FloatingActionButton.extended(
+                  heroTag: 'schedule_add_button',
+                  onPressed: () => _openScheduleForm(context),
+                  extendedPadding: const EdgeInsets.symmetric(horizontal: 24),
+                  icon: const Icon(Icons.alarm_add),
+                  label: const Text('Reminder'),
+                ),
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -135,9 +141,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }) {
     final medications = context.read<MedicationStore>().medications;
     if (medications.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Add a medication first')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Add a medication first')));
       return;
     }
 
@@ -215,9 +221,7 @@ class _ScheduleCard extends StatelessWidget {
                 tooltip: selected ? 'Unselect reminder' : 'Select reminder',
                 onPressed: onToggleSelected,
                 icon: Icon(
-                  selected
-                      ? Icons.check_box
-                      : Icons.check_box_outline_blank,
+                  selected ? Icons.check_box : Icons.check_box_outline_blank,
                 ),
               ),
               PopupMenuButton<_ScheduleAction>(
@@ -378,10 +382,7 @@ class _ScheduleFormSheetState extends State<ScheduleFormSheet> {
     final existing = widget.existing;
     _medicationId = existing?.medication.id ?? existing?.schedule.medicationId;
     final initialMinutes = existing?.schedule.timeInMinutes ?? 8 * 60;
-    _time = TimeOfDay(
-      hour: initialMinutes ~/ 60,
-      minute: initialMinutes % 60,
-    );
+    _time = TimeOfDay(hour: initialMinutes ~/ 60, minute: initialMinutes % 60);
   }
 
   @override
@@ -493,3 +494,9 @@ class _ScheduleFormSheetState extends State<ScheduleFormSheet> {
 }
 
 enum _ScheduleAction { edit, pending, delete }
+
+Color _contentTextColor(BuildContext context) {
+  return Theme.of(context).brightness == Brightness.dark
+      ? Colors.black
+      : AppTheme.ink;
+}

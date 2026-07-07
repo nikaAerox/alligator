@@ -14,6 +14,7 @@ enum MedicationStatus {
 class MedicationSchedule {
   const MedicationSchedule({
     required this.id,
+    required this.patientId,
     required this.medicationId,
     required this.timeInMinutes,
     required this.status,
@@ -23,6 +24,7 @@ class MedicationSchedule {
   });
 
   final String id;
+  final String patientId;
   final String medicationId;
   final int timeInMinutes;
   final MedicationStatus status;
@@ -40,6 +42,7 @@ class MedicationSchedule {
 
   MedicationSchedule copyWith({
     String? id,
+    String? patientId,
     String? medicationId,
     int? timeInMinutes,
     MedicationStatus? status,
@@ -49,6 +52,7 @@ class MedicationSchedule {
   }) {
     return MedicationSchedule(
       id: id ?? this.id,
+      patientId: patientId ?? this.patientId,
       medicationId: medicationId ?? this.medicationId,
       timeInMinutes: timeInMinutes ?? this.timeInMinutes,
       status: status ?? this.status,
@@ -61,6 +65,7 @@ class MedicationSchedule {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'patientId': patientId,
       'medicationId': medicationId,
       'timeInMinutes': timeInMinutes,
       'status': status.name,
@@ -73,6 +78,7 @@ class MedicationSchedule {
   factory MedicationSchedule.fromJson(Map<String, dynamic> json) {
     return MedicationSchedule(
       id: json['id'] as String,
+      patientId: json['patientId'] as String? ?? '',
       medicationId: json['medicationId'] as String,
       timeInMinutes: json['timeInMinutes'] as int,
       status: MedicationStatus.values.byName(
