@@ -9,9 +9,10 @@ import 'notification_types.dart';
 class NotificationService {
   NotificationService();
 
-  static const _channelId = 'medication_reminders';
+  static const _channelId = 'medication_reminders_alarm';
   static const _channelName = 'Medication Reminders';
   static const _channelDescription = 'Reminders for scheduled medication times';
+  static const _soundName = 'homecoming_samsung_oneui_alarm';
   static const _actionTaken = 'medication_taken';
   static const _actionPostponed = 'medication_postponed';
   static NotificationActionHandler? _actionHandler;
@@ -78,6 +79,8 @@ class NotificationService {
           enableVibration: true,
           category: AndroidNotificationCategory.alarm,
           fullScreenIntent: true,
+          sound: const RawResourceAndroidNotificationSound(_soundName),
+          audioAttributesUsage: AudioAttributesUsage.alarm,
           actions: <AndroidNotificationAction>[
             AndroidNotificationAction(
               _actionTaken,

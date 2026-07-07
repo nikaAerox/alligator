@@ -232,10 +232,10 @@ class MedicationStore extends ChangeNotifier {
             scheduledFor: _nextReminderTime(current.timeInMinutes),
           )
         : status == MedicationStatus.postponed
-            ? current.copyWith(
-                status: status,
-                scheduledFor: DateTime.now().add(const Duration(minutes: 10)),
-              )
+        ? current.copyWith(
+            status: status,
+            scheduledFor: DateTime.now().add(const Duration(minutes: 10)),
+          )
         : current.copyWith(status: status);
     _schedules[index] = updatedSchedule;
     if (status != MedicationStatus.pending) {
@@ -278,7 +278,9 @@ class MedicationStore extends ChangeNotifier {
       final dueAt =
           schedule.scheduledFor ??
           _nextReminderTime(schedule.timeInMinutes, currentTime);
-      final graceMinutes = schedule.status == MedicationStatus.postponed ? 10 : 5;
+      final graceMinutes = schedule.status == MedicationStatus.postponed
+          ? 10
+          : 5;
 
       if (schedule.scheduledFor == null) {
         _schedules[index] = schedule.copyWith(scheduledFor: dueAt);

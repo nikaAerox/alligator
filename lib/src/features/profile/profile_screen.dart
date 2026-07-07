@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/state/auth_store.dart';
+import '../../core/state/theme_store.dart';
 import '../../shared/widgets/pressable_scale.dart';
 import '../auth/login_screen.dart';
 
@@ -38,6 +39,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final patient = context.watch<AuthStore>().currentPatient;
+    final themeStore = context.watch<ThemeStore>();
 
     return Scaffold(
       appBar: AppBar(title: const Text('Profile')),
@@ -61,6 +63,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
+                  Card(
+                    child: SwitchListTile(
+                      value: themeStore.isDarkMode,
+                      onChanged: themeStore.toggleDarkMode,
+                      secondary: const Icon(Icons.dark_mode_outlined),
+                      title: const Text('Dark mode'),
+                      subtitle: Text(
+                        themeStore.isDarkMode ? 'Enabled' : 'Disabled',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
                   TextFormField(
                     controller: _nameController,
                     decoration: const InputDecoration(
