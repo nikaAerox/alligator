@@ -32,14 +32,17 @@ class MedicareApp extends StatefulWidget {
 class _MedicareAppState extends State<MedicareApp> {
   late final ThemeStore _fallbackThemeStore = ThemeStore();
 
-  ThemeStore get _effectiveThemeStore => widget.themeStore ?? _fallbackThemeStore;
+  ThemeStore get _effectiveThemeStore =>
+      widget.themeStore ?? _fallbackThemeStore;
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: _effectiveThemeStore),
-        ChangeNotifierProvider(create: (_) => AuthStore(storage: widget.storage)),
+        ChangeNotifierProvider(
+          create: (_) => AuthStore(storage: widget.storage),
+        ),
         ChangeNotifierProxyProvider<AuthStore, MedicationStore>(
           create: (_) => MedicationStore.seeded(
             storage: widget.storage,
