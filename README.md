@@ -93,7 +93,7 @@ When the app is opened for the first time:
 
 ---
 
-## 5. Login and Register
+## 2. Login and Register
 ### Login
 1. Enter your email and password.
 2. Tap **Sign In**.
@@ -106,7 +106,7 @@ When the app is opened for the first time:
 
 ---
 
-## 6. Home Page
+## 3. Home Page
 The home page shows a summary of the user's health and medication information. It acts as the main dashboard of the app.
 
 ### Main Sections
@@ -125,7 +125,7 @@ This helps users view medication intake history for different time periods.
 
 ---
 
-## 7. Medication Page
+## 4. Medication Page
 The Medication page is used to manage the user's medicine list.
 
 ### Features
@@ -159,7 +159,7 @@ The Medication page is used to manage the user's medicine list.
 
 ---
 
-## 8. Schedule Page
+## 5. Schedule Page
 The Schedule page is used to manage medication reminders.
 
 ### Features
@@ -189,7 +189,7 @@ Users can select one or more reminders and tap **Remind Daily** to make them rep
 
 ---
 
-## 9. Health Page
+## 6. Health Page
 The Health page stores the user's basic health records.
 
 ### Health Records Included
@@ -212,7 +212,7 @@ The system will display the BMI result and status after the values are saved.
 
 ---
 
-## 10. Profile Page
+## 7. Profile Page
 The Profile page allows users to manage their account settings.
 
 ### Features
@@ -224,7 +224,7 @@ The Profile page allows users to manage their account settings.
 
 ---
 
-## 11. Dark Mode
+## 8. Dark Mode
 MediCare supports dark mode to make the app more comfortable to use, especially in low-light environments.
 
 ### To Enable Dark Mode
@@ -234,7 +234,7 @@ MediCare supports dark mode to make the app more comfortable to use, especially 
 
 ---
 
-## 12. Notifications
+## 9. Notifications
 MediCare can send reminder notifications when it is time to take medication.
 
 ### Notification Actions
@@ -246,7 +246,7 @@ If no action is taken for a while, the reminder may become **Missed** automatica
 
 ---
 
-## 13. Data Storage
+## 10. Data Storage
 The app saves user data locally in the database so that the information can be used again after login.
 
 ### Stored Data Includes
@@ -258,7 +258,7 @@ The app saves user data locally in the database so that the information can be u
 
 ---
 
-## 14. Common Problems
+## 11. Common Problems
 ### 1. Reminder Not Showing
 - Check if notifications are allowed on your phone.
 - Make sure battery saver is not blocking the app.
