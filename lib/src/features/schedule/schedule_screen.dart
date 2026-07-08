@@ -86,7 +86,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                     if (!_selectedScheduleIds.remove(
                                       item.schedule.id,
                                     )) {
-                                      _selectedScheduleIds.add(item.schedule.id);
+                                      _selectedScheduleIds.add(
+                                        item.schedule.id,
+                                      );
                                     }
                                   });
                                 },
@@ -177,6 +179,7 @@ class _ScheduleCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final schedule = item.schedule;
     final medication = item.medication;
+    final textColor = _contentTextColor(context);
 
     return Card(
       color: const Color(0xFFFCF6ED),
@@ -200,13 +203,16 @@ class _ScheduleCard extends StatelessWidget {
           ),
           title: Text(
             schedule.displayTime,
-            style: const TextStyle(fontWeight: FontWeight.w800),
+            style: TextStyle(fontWeight: FontWeight.w800, color: textColor),
           ),
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('${medication.name} - ${medication.dosage}'),
+              Text(
+                '${medication.name} - ${medication.dosage}',
+                style: TextStyle(color: textColor),
+              ),
               if (schedule.isDaily)
                 const Padding(
                   padding: EdgeInsets.only(top: 4),
@@ -242,15 +248,17 @@ class _ScheduleCard extends StatelessWidget {
                 itemBuilder: (context) => const [
                   PopupMenuItem(
                     value: _ScheduleAction.edit,
-                    child: _ScheduleMenuPill(label: 'Edit'),
+                    child: Center(child: _ScheduleMenuPill(label: 'Edit')),
                   ),
                   PopupMenuItem(
                     value: _ScheduleAction.pending,
-                    child: _ScheduleMenuPill(label: 'Set pending'),
+                    child: Center(
+                      child: _ScheduleMenuPill(label: 'Set pending'),
+                    ),
                   ),
                   PopupMenuItem(
                     value: _ScheduleAction.delete,
-                    child: _ScheduleMenuPill(label: 'Delete'),
+                    child: Center(child: _ScheduleMenuPill(label: 'Delete')),
                   ),
                 ],
                 child: _StatusChip(status: schedule.status),
@@ -338,6 +346,7 @@ class _EmptyScheduleState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textColor = _contentTextColor(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(28),
@@ -348,13 +357,17 @@ class _EmptyScheduleState extends StatelessWidget {
             const SizedBox(height: 14),
             const Text(
               'No reminders yet',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: Colors.black,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               'Create reminder times for your medications.',
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: TextStyle(color: textColor),
             ),
           ],
         ),

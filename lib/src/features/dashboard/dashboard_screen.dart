@@ -317,6 +317,7 @@ class _AdherenceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textColor = _contentTextColor(context);
     final total = schedules.length;
     final taken = schedules
         .where((item) => item.schedule.status == MedicationStatus.taken)
@@ -354,9 +355,10 @@ class _AdherenceCard extends StatelessWidget {
                   Center(
                     child: Text(
                       '$percentage%',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 22,
+                        color: textColor,
                       ),
                     ),
                   ),
@@ -368,18 +370,25 @@ class _AdherenceCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Medication Adherence',
-                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 18,
+                      color: textColor,
+                    ),
                   ),
                   const SizedBox(height: 8),
-                  Text('$taken taken, $missed missed, $postponed postponed'),
+                  Text(
+                    '$taken taken, $missed missed, $postponed postponed',
+                    style: TextStyle(color: textColor),
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     total == 0
                         ? 'Add reminders to start tracking your medication routine.'
                         : _adherenceMessage(adherence),
-                    style: const TextStyle(color: Color(0xFF627174)),
+                    style: TextStyle(color: textColor),
                   ),
                 ],
               ),
@@ -398,6 +407,7 @@ class _NextDoseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textColor = _contentTextColor(context);
     final next = schedules
         .where((item) => item.schedule.status == MedicationStatus.pending)
         .firstOrNull;
@@ -408,13 +418,16 @@ class _NextDoseCard extends StatelessWidget {
       shadowColor: Colors.black26,
       shape: _dashboardCardShape,
       child: next == null
-          ? const ListTile(
+          ? ListTile(
               leading: CircleAvatar(
                 backgroundColor: Color(0xFFE1F3E9),
                 child: Icon(Icons.check_circle, color: AppTheme.success),
               ),
-              title: Text('Next Reminder'),
-              subtitle: Text('No pending medication reminders'),
+              title: Text('Next Reminder', style: TextStyle(color: textColor)),
+              subtitle: Text(
+                'No pending medication reminders',
+                style: TextStyle(color: textColor),
+              ),
             )
           : Padding(
               padding: const EdgeInsets.all(14),
@@ -436,17 +449,21 @@ class _NextDoseCard extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Next Reminder',
-                              style: TextStyle(fontWeight: FontWeight.w800),
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                color: textColor,
+                              ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               '${next.medication.name} - ${next.schedule.displayTime}',
+                              style: TextStyle(color: textColor),
                             ),
                             Text(
                               next.medication.dosage,
-                              style: const TextStyle(color: Color(0xFF627174)),
+                              style: TextStyle(color: textColor),
                             ),
                           ],
                         ),
@@ -543,9 +560,13 @@ class _HealthSnapshotCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Health Snapshot',
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 18,
+                color: textColor,
+              ),
             ),
             const SizedBox(height: 14),
             Row(
@@ -662,10 +683,14 @@ class _MedicationHistoryReport extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
                     'Medication Intake History',
-                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 18,
+                      color: textColor,
+                    ),
                   ),
                 ),
                 Text(
@@ -724,9 +749,10 @@ class _MedicationHistoryReport extends StatelessWidget {
                       child: Text(
                         '$taken/$total\nTaken',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.w900,
                           fontSize: 18,
+                          color: textColor,
                         ),
                       ),
                     ),
@@ -945,10 +971,7 @@ class _MetricTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: TextStyle(color: textColor.withValues(alpha: 0.72)),
-          ),
+          Text(label, style: TextStyle(color: textColor)),
           const SizedBox(height: 6),
           Text(
             value,
@@ -1041,10 +1064,14 @@ String _medicationSuggestion(List<ScheduledMedication> schedules) {
   return 'All medication reminders are updated. Good job keeping your records complete.';
 }
 
+// Health Suggestions
 String _healthSuggestion(HealthRecord record) {
   switch (record.type) {
     case HealthRecordType.bmi:
       final bmi = double.tryParse(record.value) ?? 0;
+      if (bmi == 0) {
+        return 'BMI: No BMI record found. Consider measuring your BMI for health tracking.';
+      }
       if (bmi < 18.5) {
         return 'BMI: Your BMI is low. Try to eat balanced meals and maintain a healthy lifestyle.';
       }
@@ -1057,6 +1084,9 @@ String _healthSuggestion(HealthRecord record) {
       return 'BMI: Your BMI is high. Consider meal planning, exercise, and professional advice if needed.';
     case HealthRecordType.bloodSugar:
       final sugar = double.tryParse(record.value) ?? 0;
+      if (sugar == 0) {
+        return 'Blood sugar: No blood sugar record found. Consider measuring your blood sugar for health tracking.';
+      }
       if (sugar < 4.0) {
         return 'Blood sugar: Low reading. Eat or drink something with sugar and monitor your condition.';
       }
@@ -1071,6 +1101,9 @@ String _healthSuggestion(HealthRecord record) {
       final parts = record.value.split('/');
       final systolic = parts.isNotEmpty ? int.tryParse(parts.first) ?? 0 : 0;
       final diastolic = parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0;
+      if (systolic == 0 || diastolic == 0) {
+        return 'Blood pressure: No blood pressure record found. Consider measuring your blood pressure for health tracking.';
+      }
       if (systolic < 90 || diastolic < 60) {
         return 'Blood pressure: Low reading. Stay hydrated and seek medical advice if you feel dizzy or weak.';
       }

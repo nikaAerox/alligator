@@ -127,9 +127,7 @@ class _MedicationSearchBar extends StatelessWidget {
       decoration: InputDecoration(
         hintText: 'Search',
         prefixIcon: const Icon(Icons.search),
-        hintStyle: TextStyle(
-          color: contentTextColor.withValues(alpha: 0.72),
-        ),
+        hintStyle: TextStyle(color: contentTextColor),
         suffixIcon: controller.text.isEmpty
             ? null
             : IconButton(
@@ -198,9 +196,8 @@ class _MedicationCard extends StatelessWidget {
                                 context: context,
                                 isScrollControlled: true,
                                 useSafeArea: true,
-                                builder: (_) => MedicationFormSheet(
-                                  medication: medication,
-                                ),
+                                builder: (_) =>
+                                    MedicationFormSheet(medication: medication),
                               );
                               break;
                             case _MedicationAction.delete:
@@ -211,11 +208,11 @@ class _MedicationCard extends StatelessWidget {
                         itemBuilder: (context) => const [
                           PopupMenuItem(
                             value: _MedicationAction.edit,
-                            child: _MenuPill(label: 'Edit'),
+                            child: Center(child: _MenuPill(label: 'Edit')),
                           ),
                           PopupMenuItem(
                             value: _MedicationAction.delete,
-                            child: _MenuPill(label: 'Delete'),
+                            child: Center(child: _MenuPill(label: 'Delete')),
                           ),
                         ],
                       ),
@@ -245,7 +242,7 @@ class _MedicationCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: _contentTextColor(context).withValues(alpha: 0.72),
+                        color: _contentTextColor(context),
                         fontSize: 13,
                       ),
                     ),
@@ -385,11 +382,7 @@ class _MedicationDetail extends StatelessWidget {
             TextSpan(text: value),
           ],
         ),
-        style: TextStyle(
-          fontSize: 15,
-          height: 1.2,
-          color: contentTextColor,
-        ),
+        style: TextStyle(fontSize: 15, height: 1.2, color: contentTextColor),
       ),
     );
   }
