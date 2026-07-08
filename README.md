@@ -7,10 +7,10 @@ MediCare is a mobile application that helps users manage medication reminders, m
 
 ## System Requirements
 Before using the app, make sure you have:
-- An Android device connected by USB, or an emulator
-- Flutter installed
-- Android Studio installed
-- Internet is not required for basic use
+- An Android phone
+- The MediCare APK file
+- Permission to install apps from unknown sources
+- Enough storage space on your phone
 
 ---
 
@@ -27,58 +27,14 @@ Several main features:
 ---
 
 ## Installation Guide
-To install and run the MediCare project, follow these steps:
+To install MediCare on your phone:
 
-### 1. Install Flutter
-- Download and install Flutter from the official Flutter website.
-- Add Flutter to your system PATH so it can be used in the terminal.
-
-### 2. Install Android Studio
-- Download and install Android Studio.
-- Install the Android SDK.
-- Set up an Android emulator if needed.
-
-### 3. Get the Project Files
-- Open the MediCare project folder on your computer.
-
-### 4. Open the Project
-- Open the project using Visual Studio Code or Android Studio.
-
-### 5. Get Dependencies
-Run this command in the terminal:
-
-```bash
-flutter pub get
-```
-
-### 6. Connect a Device
-You can use either:
-- A physical Android phone connected by USB
-- An Android emulator
-
-### 7. Check Connected Devices
-Run this command:
-
-```bash
-flutter devices
-```
-
-### 8. Run the App
-Run this command with your device ID:
-
-```bash
-flutter run -d <device_id>
-```
-
-Example:
-
-```bash
-flutter run -d emulator-5554
-```
-
-### 9. First Launch
-- Wait for the app to build.
-- After the app starts, the welcome page will appear.
+1. Copy the MediCare APK file to your Android phone.
+2. Open the APK file from your file manager.
+3. If your phone asks for permission, allow **Install unknown apps**.
+4. Tap **Install**.
+5. Wait until the installation finishes.
+6. Open the MediCare app from your phone menu.
 
 ## User Guide
 If you are running the project using Flutter, open the project folder in your code editor or terminal and run:
@@ -259,24 +215,24 @@ The app saves user data locally in the database so that the information can be u
 ---
 
 ## 1.11 Common Problems
-### 1. Reminder Not Showing
+### 1. APK will not install
+- Make sure installation from unknown sources is allowed.
+- Check if the APK file is complete.
+- Make sure your phone has enough storage.
+
+### 2. Reminder Not Showing
 - Check if notifications are allowed on your phone.
 - Make sure battery saver is not blocking the app.
 - Check whether the reminder time is set correctly.
 
-### 2. Data Not Saved
+### 3. Data Not Saved
 - Make sure you tap the correct save button.
 - Check whether the app closed before saving.
 - Try opening the page again to confirm the data.
 
-### 3. Dark Mode Not Changing
+### 4. Dark Mode Not Changing
 - Go to the Profile page and turn on dark mode again.
 - Restart the app if needed.
-
-### 4. App Not Running in Flutter
-- Run `flutter pub get` to install required packages.
-- Make sure an emulator or Android device is connected.
-- Run `flutter devices` to check available devices.
 
 ---
 
