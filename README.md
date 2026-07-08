@@ -36,6 +36,8 @@ To install MediCare on your phone:
 5. Wait until the installation finishes.
 6. Open the MediCare app from your phone menu.
 
+---
+
 ## User Guide
 If you are running the project using Flutter, open the project folder in your code editor or terminal and run:
 
