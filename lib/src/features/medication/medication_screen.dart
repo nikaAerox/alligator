@@ -118,7 +118,10 @@ class _MedicationSearchBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final contentTextColor = _contentTextColor(context);
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final contentTextColor = isDarkMode
+        ? Colors.white
+        : _contentTextColor(context);
     return TextField(
       controller: controller,
       onChanged: onChanged,
@@ -451,7 +454,8 @@ class _NoSearchResultsState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    return Padding(
       padding: EdgeInsets.only(top: 64),
       child: Center(
         child: Text(
@@ -459,7 +463,7 @@ class _NoSearchResultsState extends StatelessWidget {
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: Colors.black,
+            color: isDarkMode ? Colors.white : Colors.black,
           ),
         ),
       ),
