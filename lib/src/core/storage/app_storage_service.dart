@@ -1,3 +1,5 @@
+// Defines the storage contract for saving and loading app data.
+
 import '../models/health_record.dart';
 import '../models/medication.dart';
 import '../models/medication_history.dart';

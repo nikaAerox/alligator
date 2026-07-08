@@ -1,3 +1,5 @@
+// Medication page with search, medication cards, and add/edit forms.
+
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -26,6 +28,7 @@ class _MedicationScreenState extends State<MedicationScreen> {
     super.dispose();
   }
 
+  // Filters medications based on the search query and shows the add button.
   @override
   Widget build(BuildContext context) {
     final medications = context.watch<MedicationStore>().medications;
@@ -97,6 +100,7 @@ class _MedicationScreenState extends State<MedicationScreen> {
     _openMedicationForm(context);
   }
 
+  // Opens the medication form for adding or editing a medication.
   void _openMedicationForm(BuildContext context, {Medication? medication}) {
     showModalBottomSheet<void>(
       context: context,
@@ -107,6 +111,7 @@ class _MedicationScreenState extends State<MedicationScreen> {
   }
 }
 
+// Handles text search input for medication filtering.
 class _MedicationSearchBar extends StatelessWidget {
   const _MedicationSearchBar({
     required this.controller,
@@ -146,6 +151,7 @@ class _MedicationSearchBar extends StatelessWidget {
   }
 }
 
+// Shows one medication card with details and actions.
 class _MedicationCard extends StatelessWidget {
   const _MedicationCard({required this.medication});
 
@@ -259,6 +265,7 @@ class _MedicationCard extends StatelessWidget {
     );
   }
 
+  // Confirms medication deletion before removing it from the list.
   Future<void> _confirmDelete(
     BuildContext context,
     Medication medication,
@@ -299,6 +306,7 @@ class _MedicationCard extends StatelessWidget {
   }
 }
 
+// Shows the thumbnail or uploaded medication image.
 class _MedicineThumbnail extends StatelessWidget {
   const _MedicineThumbnail({required this.name, this.imageBytes});
 
@@ -364,6 +372,7 @@ class _MedicineThumbnail extends StatelessWidget {
   }
 }
 
+// Builds the medication detail row such as dosage, quantity, and duration.
 class _MedicationDetail extends StatelessWidget {
   const _MedicationDetail({required this.label, required this.value});
 
@@ -391,6 +400,7 @@ class _MedicationDetail extends StatelessWidget {
   }
 }
 
+// Displays the popup menu item as a pill-style button.
 class _MenuPill extends StatelessWidget {
   const _MenuPill({required this.label});
 
@@ -419,6 +429,7 @@ class _MenuPill extends StatelessWidget {
   }
 }
 
+// Empty state shown when no medications exist.
 class _EmptyMedicationState extends StatelessWidget {
   const _EmptyMedicationState();
 
@@ -449,6 +460,7 @@ class _EmptyMedicationState extends StatelessWidget {
   }
 }
 
+// Empty state shown when search finds no results.
 class _NoSearchResultsState extends StatelessWidget {
   const _NoSearchResultsState();
 
@@ -471,6 +483,7 @@ class _NoSearchResultsState extends StatelessWidget {
   }
 }
 
+// Form sheet used to add a new medication or edit an existing one.
 class MedicationFormSheet extends StatefulWidget {
   const MedicationFormSheet({super.key, this.medication});
 
@@ -493,6 +506,7 @@ class _MedicationFormSheetState extends State<MedicationFormSheet> {
 
   bool get _isEditing => widget.medication != null;
 
+  // Loads existing medication values into the form.
   @override
   void initState() {
     super.initState();
@@ -665,6 +679,7 @@ class _MedicationFormSheetState extends State<MedicationFormSheet> {
     );
   }
 
+  // Saves the medication as a new item or updates the existing item.
   void _save() {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -701,6 +716,7 @@ class _MedicationFormSheetState extends State<MedicationFormSheet> {
     Navigator.of(context).pop();
   }
 
+  // Lets the user choose an image from the gallery.
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final image = await picker.pickImage(
@@ -719,6 +735,7 @@ class _MedicationFormSheetState extends State<MedicationFormSheet> {
   }
 }
 
+// Panel for choosing, changing, or removing the medicine image.
 class _ImagePickerPanel extends StatelessWidget {
   const _ImagePickerPanel({
     required this.imageBytes,

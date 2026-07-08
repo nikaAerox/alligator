@@ -1,3 +1,5 @@
+// Web placeholder for notification handling, since live mobile notifications are not implemented on web.
+
 import 'notification_types.dart';
 
 class NotificationService {

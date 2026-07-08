@@ -1,3 +1,6 @@
+// Represents a medication reminder schedule and stores the time, status
+// Daily setting, and display time in 12-hour format
+
 import 'medication.dart';
 
 enum MedicationStatus {

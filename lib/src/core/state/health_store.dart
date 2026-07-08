@@ -1,3 +1,6 @@
+// Manages the current user’s health records.
+// Creates default empty records for BMI, blood sugar, and blood pressure when a new user logs in for the first time.
+
 import 'package:flutter/foundation.dart';
 
 import '../models/health_record.dart';
@@ -18,6 +21,7 @@ class HealthStore extends ChangeNotifier {
   final AppStorageService? _storage;
   String? _currentPatientId;
 
+  // Returns only the health records that belong to the current user.
   List<HealthRecord> get records {
     final patientId = _currentPatientId;
     if (patientId == null) {
@@ -28,6 +32,7 @@ class HealthStore extends ChangeNotifier {
     );
   }
 
+  // Sets the active patient ID and prepares default health records if needed.
   void setCurrentPatientId(String? patientId) {
     if (_currentPatientId == patientId) {
       return;
@@ -39,6 +44,7 @@ class HealthStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Updates an existing health record and saves it to storage.
   void updateRecord(HealthRecord record) {
     final index = _records.indexWhere((item) => item.id == record.id);
     if (index == -1) {
@@ -54,6 +60,7 @@ class HealthStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Creates default zero-value health records for a new patient. (ensures every user starts with the same health record layout.)
   void _ensureEmptyRecords(String patientId) {
     final hasRecords = _records.any((record) => record.patientId == patientId);
     if (hasRecords) {

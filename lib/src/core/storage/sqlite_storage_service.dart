@@ -1,3 +1,6 @@
+// Manages the SQLite database for all app data.
+// This service loads data into memory first, then saves changes back to the database.
+
 import 'dart:typed_data';
 
 import 'package:path/path.dart' as p;
@@ -39,6 +42,7 @@ class SqliteStorageService implements AppStorageService {
   List<Patient> _patients;
   String? _currentPatientId;
 
+  // Opens the SQLite database and loads all cached data into memory.
   static Future<SqliteStorageService> create() async {
     final dbPath = await getDatabasesPath();
     final database = await openDatabase(
@@ -53,6 +57,7 @@ class SqliteStorageService implements AppStorageService {
     return service;
   }
 
+  // Creates all database tables when the app is installed for the first time.
   static Future<void> _createSchema(Database db, int version) async {
     await _createPatientSchema(db);
 
@@ -103,6 +108,7 @@ class SqliteStorageService implements AppStorageService {
     ''');
   }
 
+  // Upgrades the database structure when the app version changes.
   static Future<void> _upgradeSchema(
     Database db,
     int oldVersion,
@@ -181,6 +187,7 @@ class SqliteStorageService implements AppStorageService {
     ''');
   }
 
+  // Loads database records into memory so the app can use them quickly.
   Future<void> _loadCache() async {
     final medicationRows = await _database.query(_medicationsTable);
     final scheduleRows = await _database.query(_schedulesTable);
@@ -204,6 +211,7 @@ class SqliteStorageService implements AppStorageService {
         : settingRows.first['value'] as String?;
   }
 
+  // Load patients from the in-memory cache.
   @override
   List<Patient>? loadPatients() {
     return _patients.isEmpty ? null : List.unmodifiable(_patients);
@@ -234,6 +242,7 @@ class SqliteStorageService implements AppStorageService {
     return _healthRecords.isEmpty ? null : List.unmodifiable(_healthRecords);
   }
 
+  // Save patients to the database and refresh the cache.
   @override
   Future<void> savePatients(List<Patient> patients) async {
     _patients = List.of(patients);
@@ -329,6 +338,7 @@ class SqliteStorageService implements AppStorageService {
     });
   }
 
+  // Convert a Medication object into a database row.
   Map<String, Object?> _medicationToRow(Medication medication) {
     return {
       'id': medication.id,
@@ -345,6 +355,7 @@ class SqliteStorageService implements AppStorageService {
     };
   }
 
+  // Convert a database row into a Medication object.
   Medication _medicationFromRow(Map<String, Object?> row) {
     return Medication(
       id: row['id']! as String,
@@ -363,6 +374,7 @@ class SqliteStorageService implements AppStorageService {
     );
   }
 
+  // Convert a MedicationSchedule object into a database row.
   Map<String, Object?> _scheduleToRow(MedicationSchedule schedule) {
     return {
       'id': schedule.id,
@@ -376,6 +388,7 @@ class SqliteStorageService implements AppStorageService {
     };
   }
 
+  // Convert a database row into a MedicationSchedule object.
   MedicationSchedule _scheduleFromRow(Map<String, Object?> row) {
     final medicationPatientId = _patientIdForMedication(
       row['medicationId']! as String,
@@ -392,6 +405,7 @@ class SqliteStorageService implements AppStorageService {
     );
   }
 
+  // Convert a MedicationHistory object into a database row.
   Map<String, Object?> _historyToRow(MedicationHistory history) {
     return {
       'id': history.id,
@@ -405,6 +419,7 @@ class SqliteStorageService implements AppStorageService {
     };
   }
 
+  // Convert a database row into a MedicationHistory object.
   MedicationHistory _historyFromRow(Map<String, Object?> row) {
     return MedicationHistory(
       id: row['id']! as String,
@@ -418,6 +433,7 @@ class SqliteStorageService implements AppStorageService {
     );
   }
 
+  // Convert a HealthRecord object into a database row.
   Map<String, Object?> _healthRecordToRow(HealthRecord record) {
     return {
       'id': record.id,
@@ -430,6 +446,7 @@ class SqliteStorageService implements AppStorageService {
     };
   }
 
+  // Convert a database row into a HealthRecord object.
   HealthRecord _healthRecordFromRow(Map<String, Object?> row) {
     return HealthRecord(
       id: row['id']! as String,
@@ -442,6 +459,7 @@ class SqliteStorageService implements AppStorageService {
     );
   }
 
+  // Convert a Patient object into a database row.
   Map<String, Object?> _patientToRow(Patient patient) {
     return {
       'id': patient.id,
@@ -452,6 +470,7 @@ class SqliteStorageService implements AppStorageService {
     };
   }
 
+  // Convert a database row into a Patient object.
   Patient _patientFromRow(Map<String, Object?> row) {
     return Patient(
       id: row['id']! as String,
@@ -462,6 +481,7 @@ class SqliteStorageService implements AppStorageService {
     );
   }
 
+  // Find the patient ID that belongs to a medication.
   String _patientIdForMedication(String medicationId) {
     for (final medication in _medications) {
       if (medication.id == medicationId) {

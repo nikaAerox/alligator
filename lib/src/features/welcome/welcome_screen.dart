@@ -1,3 +1,5 @@
+// Welcome screen shown before login, with app intro text and get-started button.
+
 import 'package:flutter/material.dart';
 
 import '../../shared/widgets/pressable_scale.dart';
@@ -7,6 +9,7 @@ import '../auth/login_screen.dart';
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
 
+  // Builds the welcome layout and opens the login screen when started.
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -69,6 +72,7 @@ class WelcomeScreen extends StatelessWidget {
   }
 }
 
+// Displays the MediCare title and app icon.
 class _WelcomeLogo extends StatelessWidget {
   const _WelcomeLogo({required this.compact});
 
@@ -118,6 +122,7 @@ class _WelcomeLogo extends StatelessWidget {
   }
 }
 
+// Shows the intro text and the Get Started button.
 class _WelcomePanel extends StatelessWidget {
   const _WelcomePanel({required this.compact, required this.onGetStarted});
 

@@ -1,3 +1,6 @@
+// Manages user login, registration, profile updates, and logout.
+// Also loads the saved logged-in user from storage when the app starts.
+
 import 'package:flutter/foundation.dart';
 
 import '../models/patient.dart';
@@ -21,6 +24,7 @@ class AuthStore extends ChangeNotifier {
 
   bool get isLoggedIn => _currentPatient != null;
 
+  // Registers a new user after validating name, email, and password. Then, saves the new account and logs the user in immediately.
   Future<String?> register({
     required String name,
     required String email,
@@ -58,6 +62,7 @@ class AuthStore extends ChangeNotifier {
     return null;
   }
 
+  // Logs in an existing user by matching email and password.
   Future<String?> login({
     required String email,
     required String password,
@@ -77,6 +82,7 @@ class AuthStore extends ChangeNotifier {
     return null;
   }
 
+  // Updates the current user profile details and saves the changes.
   Future<String?> updateProfile({
     required String name,
     required String email,
@@ -122,12 +128,14 @@ class AuthStore extends ChangeNotifier {
     return null;
   }
 
+  // Logs the user out and clears the saved current user ID.
   Future<void> logout() async {
     _currentPatient = null;
     await _storage?.saveCurrentPatientId(null);
     notifyListeners();
   }
 
+  // Finds a patient by their unique ID.
   Patient? _findPatientById(String id) {
     for (final patient in _patients) {
       if (patient.id == id) {
@@ -137,11 +145,13 @@ class AuthStore extends ChangeNotifier {
     return null;
   }
 
+  // Saves the current list of patients and the logged-in user ID to storage.
   Future<void> _saveAuthData() async {
     await _storage?.savePatients(_patients);
     await _storage?.saveCurrentPatientId(_currentPatient?.id);
   }
 
+  // Checks whether the email has a valid format.
   bool _isValidEmail(String email) {
     return email.contains('@') && email.contains('.');
   }

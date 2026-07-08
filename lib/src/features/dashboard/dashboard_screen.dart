@@ -1,3 +1,5 @@
+// Main dashboard that keeps the header and navigation fixed while switching tabs.
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -34,6 +36,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     HealthScreen(),
   ];
 
+  // Starts a timer that refreshes overdue reminders while the app is open.
   @override
   void initState() {
     super.initState();
@@ -48,6 +51,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     }
   }
 
+  // Cancels the sync timer and removes lifecycle listeners.
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
@@ -55,6 +59,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     super.dispose();
   }
 
+  // Refreshes overdue pending reminders when the app returns to the foreground.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
@@ -86,6 +91,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 }
 
+// Displays the fixed header with the profile button and background image.
 class _DashboardHeader extends StatelessWidget {
   const _DashboardHeader();
 
@@ -130,6 +136,7 @@ class _DashboardHeader extends StatelessWidget {
   }
 }
 
+// Builds the bottom navigation bar used to switch between tabs.
 class _DashboardNavigation extends StatelessWidget {
   const _DashboardNavigation({
     required this.selectedIndex,
@@ -194,6 +201,7 @@ class _DashboardNavigation extends StatelessWidget {
   }
 }
 
+// Creates one navigation button with selected and unselected states.
 class _NavButton extends StatelessWidget {
   const _NavButton({
     required this.icon,
@@ -254,6 +262,7 @@ class _NavButton extends StatelessWidget {
   }
 }
 
+// Home tab content shown inside the dashboard.
 class _HomeTab extends StatefulWidget {
   const _HomeTab();
 
@@ -310,6 +319,7 @@ enum _HistoryPeriod {
   final String label;
 }
 
+// Shows medication adherence summary with a donut chart and counts.
 class _AdherenceCard extends StatelessWidget {
   const _AdherenceCard({required this.schedules});
 
@@ -400,6 +410,7 @@ class _AdherenceCard extends StatelessWidget {
   }
 }
 
+// Shows the next pending reminder and quick action buttons.
 class _NextDoseCard extends StatelessWidget {
   const _NextDoseCard({required this.schedules});
 
@@ -542,6 +553,7 @@ class _ReminderActionButton extends StatelessWidget {
   }
 }
 
+// Shows the latest BMI, sugar, and blood pressure readings.
 class _HealthSnapshotCard extends StatelessWidget {
   const _HealthSnapshotCard({required this.records});
 
@@ -650,6 +662,7 @@ class _SuggestionCard extends StatelessWidget {
   }
 }
 
+// Shows history filters, intake chart, and recent medication actions.
 class _MedicationHistoryReport extends StatelessWidget {
   const _MedicationHistoryReport({
     required this.histories,
@@ -795,6 +808,7 @@ class _MedicationHistoryReport extends StatelessWidget {
   }
 }
 
+// Draws the intake history donut chart.
 class _HistoryDonutPainter extends CustomPainter {
   const _HistoryDonutPainter({
     required this.taken,
@@ -847,6 +861,7 @@ class _HistoryDonutPainter extends CustomPainter {
   }
 }
 
+// Displays a legend item for the chart.
 class _LegendItem extends StatelessWidget {
   const _LegendItem({
     required this.color,

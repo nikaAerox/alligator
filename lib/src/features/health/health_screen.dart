@@ -1,3 +1,5 @@
+// Health records page that shows readings, status badges, and edit forms.
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -29,6 +31,7 @@ class HealthScreen extends StatelessWidget {
   }
 }
 
+// Builds each health record card and opens the edit form when pressed.
 class _HealthRecordCard extends StatelessWidget {
   const _HealthRecordCard({required this.record});
 
@@ -105,6 +108,7 @@ class _HealthRecordCard extends StatelessWidget {
     );
   }
 
+  // Opens the edit bottom sheet for the selected record.
   void _openEditForm(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
@@ -115,6 +119,7 @@ class _HealthRecordCard extends StatelessWidget {
   }
 }
 
+// Shows the record value with its unit.
 class _ReadingValue extends StatelessWidget {
   const _ReadingValue({required this.record});
 
@@ -154,6 +159,7 @@ class _ReadingValue extends StatelessWidget {
   }
 }
 
+// Displays the health status badge and color.
 class _StatusBadge extends StatelessWidget {
   const _StatusBadge({required this.status});
 
@@ -252,6 +258,7 @@ class _HealthRecordFormSheetState extends State<HealthRecordFormSheet> {
     );
   }
 
+  // Builds the correct input fields based on the selected health record type.
   List<Widget> _buildFields() {
     switch (widget.record.type) {
       case HealthRecordType.bmi:
@@ -323,6 +330,7 @@ class _HealthRecordFormSheetState extends State<HealthRecordFormSheet> {
     }
   }
 
+  // Validates positive numeric input.
   String? _requiredPositiveNumber(String? value) {
     final number = double.tryParse(value?.trim() ?? '');
     if (number == null) {
@@ -334,6 +342,7 @@ class _HealthRecordFormSheetState extends State<HealthRecordFormSheet> {
     return null;
   }
 
+  // Saves the edited record and recalculates BMI when needed.
   void _save() {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -365,6 +374,7 @@ class _HealthRecordFormSheetState extends State<HealthRecordFormSheet> {
   }
 }
 
+// Calculates the health status and suggestion text for the record.
 _HealthStatus _healthStatus(HealthRecord record) {
   switch (record.type) {
     // Determines the BMI level based on the record type and value
@@ -480,6 +490,7 @@ _HealthStatus _healthStatus(HealthRecord record) {
   }
 }
 
+// Holds the label, badge color, and suggestion text for one health status.
 class _HealthStatus {
   const _HealthStatus(this.label, this.color, this.suggestion);
 

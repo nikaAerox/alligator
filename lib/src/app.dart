@@ -1,3 +1,6 @@
+// Root widget of MediCare.
+// Provides app-wide state for authentication, medication, health, and theme.
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

@@ -1,3 +1,5 @@
+// Defines the app's color palette and theme data for light and dark modes.
+
 import 'package:flutter/material.dart';
 
 class AppTheme {

@@ -1,3 +1,6 @@
+// Keeps a log of medication actions such as Taken, Postponed, or Missed
+// linked to the patient, medication, and reminder schedule
+
 import 'medication_schedule.dart';
 
 class MedicationHistory {

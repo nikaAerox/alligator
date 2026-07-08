@@ -1,3 +1,5 @@
+// Login screen for existing users and bottom-sheet registration for new users.
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -115,6 +117,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  // Validates the login form, checks credentials, and opens the dashboard on success.
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -141,6 +144,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  // Opens the registration sheet so a new user can create an account.
   void _openRegisterSheet() {
     showModalBottomSheet<void>(
       context: context,
@@ -151,6 +155,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
+// Shows the registration form in a bottom sheet.
 class RegisterSheet extends StatefulWidget {
   const RegisterSheet({super.key});
 
@@ -263,6 +268,7 @@ class _RegisterSheetState extends State<RegisterSheet> {
     );
   }
 
+  // Returns an error if the field is empty.
   String? _required(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'Required';
@@ -270,6 +276,7 @@ class _RegisterSheetState extends State<RegisterSheet> {
     return null;
   }
 
+  // Validates registration input and creates a new account.
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -300,6 +307,7 @@ class _RegisterSheetState extends State<RegisterSheet> {
   }
 }
 
+// Displays the app logo, title, and short description on the login page.
 class _BrandHeader extends StatelessWidget {
   const _BrandHeader();
 

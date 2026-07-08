@@ -1,3 +1,5 @@
+// Defines a medication record, including timing, status, image
+
 import 'dart:typed_data';
 
 import 'dart:convert';

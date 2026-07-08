@@ -1,3 +1,6 @@
+// Handles Android/iOS notifications, including scheduling reminders
+// Playing alarm sound, and processing Taken/Postpone actions.
+
 import 'dart:io';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';

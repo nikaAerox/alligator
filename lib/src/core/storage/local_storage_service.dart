@@ -1,3 +1,6 @@
+// Stores app data in browser local storage using JSON encoding.
+// This is used for web platforms.
+
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -20,7 +23,8 @@ class LocalStorageService implements AppStorageService {
   static const _currentPatientIdKey = 'current_patient_id';
 
   final SharedPreferences _preferences;
-
+  
+  // Load patients from local storage.
   @override
   List<Patient>? loadPatients() {
     final source = _preferences.getString(_patientsKey);
@@ -34,6 +38,7 @@ class LocalStorageService implements AppStorageService {
         .toList();
   }
 
+  // Load the currently selected patient ID.
   @override
   String? loadCurrentPatientId() {
     return _preferences.getString(_currentPatientIdKey);
@@ -104,6 +109,7 @@ class LocalStorageService implements AppStorageService {
         .toList();
   }
 
+  // Save patients into local storage.
   @override
   Future<void> savePatients(List<Patient> patients) {
     final encoded = jsonEncode(
@@ -112,6 +118,7 @@ class LocalStorageService implements AppStorageService {
     return _preferences.setString(_patientsKey, encoded);
   }
 
+  // Save or remove the current patient ID.
   @override
   Future<void> saveCurrentPatientId(String? patientId) {
     if (patientId == null) {

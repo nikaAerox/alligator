@@ -1,3 +1,5 @@
+// Schedule page for creating reminders, selecting reminders, and managing reminder status.
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -14,8 +16,10 @@ class ScheduleScreen extends StatefulWidget {
 }
 
 class _ScheduleScreenState extends State<ScheduleScreen> {
+  // Stores the IDs of reminders selected by the user.
   final Set<String> _selectedScheduleIds = <String>{};
 
+  // Builds the schedule list, selection controls, and add reminder button.
   @override
   Widget build(BuildContext context) {
     final store = context.watch<MedicationStore>();
@@ -53,6 +57,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                             if (_selectedScheduleIds.isEmpty) {
                               return;
                             }
+                            // Marks selected reminders as daily or removes the daily flag.
                             store.setSchedulesDaily(
                               scheduleIds: _selectedScheduleIds,
                               isDaily: !allSelectedAreDaily,
@@ -137,6 +142,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 
+  // Opens the reminder form, or warns the user if no medication exists yet.
   void _openScheduleForm(
     BuildContext context, {
     ScheduledMedication? existing,
@@ -158,6 +164,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 }
 
+// Shows one reminder card with action menu and selection checkbox.
 class _ScheduleCard extends StatelessWidget {
   const _ScheduleCard({
     required this.item,
@@ -271,6 +278,7 @@ class _ScheduleCard extends StatelessWidget {
   }
 }
 
+// Lets the user mark a reminder as daily.
 class _DailyChip extends StatelessWidget {
   const _DailyChip();
 
@@ -290,6 +298,7 @@ class _DailyChip extends StatelessWidget {
   }
 }
 
+// Displays the schedule action menu items.
 class _ScheduleMenuPill extends StatelessWidget {
   const _ScheduleMenuPill({required this.label});
 
@@ -318,6 +327,7 @@ class _ScheduleMenuPill extends StatelessWidget {
   }
 }
 
+// Shows the status chip for pending, taken, postponed, or missed.
 class _StatusChip extends StatelessWidget {
   const _StatusChip({required this.status});
 
@@ -341,6 +351,7 @@ class _StatusChip extends StatelessWidget {
   }
 }
 
+// Empty state when no reminders are saved.
 class _EmptyScheduleState extends StatelessWidget {
   const _EmptyScheduleState();
 
@@ -376,6 +387,7 @@ class _EmptyScheduleState extends StatelessWidget {
   }
 }
 
+// Form sheet for adding or editing a reminder.
 class ScheduleFormSheet extends StatefulWidget {
   const ScheduleFormSheet({super.key, this.existing});
 
@@ -389,6 +401,7 @@ class _ScheduleFormSheetState extends State<ScheduleFormSheet> {
   String? _medicationId;
   late TimeOfDay _time;
 
+  // Loads the selected medication and time for editing.
   @override
   void initState() {
     super.initState();
@@ -456,6 +469,7 @@ class _ScheduleFormSheetState extends State<ScheduleFormSheet> {
     );
   }
 
+  // Returns a readable 12-hour time string.
   String _displayTime() {
     final hour = _time.hourOfPeriod == 0 ? 12 : _time.hourOfPeriod;
     final minute = _time.minute.toString().padLeft(2, '0');
@@ -463,6 +477,7 @@ class _ScheduleFormSheetState extends State<ScheduleFormSheet> {
     return '$hour:$minute $period';
   }
 
+  // Opens the time picker and updates the selected time.
   Future<void> _pickTime() async {
     final selected = await showTimePicker(
       context: context,
@@ -480,6 +495,7 @@ class _ScheduleFormSheetState extends State<ScheduleFormSheet> {
     }
   }
 
+  // Saves a new reminder or updates the existing reminder.
   void _save() {
     final medicationId = _medicationId;
     if (medicationId == null) {

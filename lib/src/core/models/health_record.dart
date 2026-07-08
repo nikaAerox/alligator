@@ -1,3 +1,5 @@
+// Defines health record types and stores each patient’s health readings including optional BMI calculation details
+
 enum HealthRecordType {
   bmi('BMI', 'kg/m2'),
   bloodSugar('Blood Sugar', 'mmol/L'),

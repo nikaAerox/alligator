@@ -1,3 +1,6 @@
+// Manages medications, reminder schedules, and medication history.
+// Also connects reminder actions to notification responses and storage.
+
 import 'package:flutter/foundation.dart';
 
 import '../notifications/notification_service.dart';
@@ -40,10 +43,12 @@ class MedicationStore extends ChangeNotifier {
   final NotificationService? _notifications;
   String? _currentPatientId;
 
+  // Returns only medications that belong to the current user.
   List<Medication> get medications {
     return List.unmodifiable(_medicationsForCurrentPatient());
   }
 
+  // Returns only the medication history for the current user.
   List<MedicationHistory> get medicationHistories {
     final patientId = _currentPatientId;
     final items =
@@ -52,6 +57,7 @@ class MedicationStore extends ChangeNotifier {
     return List.unmodifiable(items);
   }
 
+  // Returns schedules matched to their related medication records.
   List<ScheduledMedication> get scheduledMedications {
     final items = <ScheduledMedication>[];
 
@@ -70,6 +76,7 @@ class MedicationStore extends ChangeNotifier {
     return List.unmodifiable(items);
   }
 
+  // Sets the current patient and reloads reminders for that user.
   void setCurrentPatientId(String? patientId) {
     if (_currentPatientId == patientId) {
       return;
@@ -83,6 +90,7 @@ class MedicationStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Adds a new medication and saves it to storage.
   void addMedication({
     required String name,
     required String dosage,
@@ -117,6 +125,7 @@ class MedicationStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Updates an existing medication and saves the changes.
   void updateMedication(Medication medication) {
     final index = _medications.indexWhere((item) => item.id == medication.id);
     if (index == -1) {
@@ -137,6 +146,7 @@ class MedicationStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Deletes a medication, its schedules, and related history records.
   void deleteMedication(String id) {
     final removedScheduleIds = _schedules
         .where((schedule) => schedule.medicationId == id)
@@ -153,6 +163,7 @@ class MedicationStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Adds a new medication reminder schedule for the selected medication.
   void addSchedule({required String medicationId, required int timeInMinutes}) {
     if (_currentPatientId == null) {
       return;
@@ -173,6 +184,7 @@ class MedicationStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Updates reminder details such as medication and time.
   void updateScheduleDetails({
     required String scheduleId,
     required String medicationId,
@@ -200,6 +212,7 @@ class MedicationStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Marks selected reminders as daily or non-daily.
   void setSchedulesDaily({
     required Iterable<String> scheduleIds,
     required bool isDaily,
@@ -223,6 +236,7 @@ class MedicationStore extends ChangeNotifier {
     }
   }
 
+  // Updates reminder status to Pending, Taken, Postponed, or Missed.
   void updateScheduleStatus(String scheduleId, MedicationStatus status) {
     final index = _schedules.indexWhere((item) => item.id == scheduleId);
     if (index == -1) {
@@ -260,6 +274,7 @@ class MedicationStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Deletes a reminder schedule and cancels its notification.
   void deleteSchedule(String scheduleId) {
     _schedules.removeWhere((schedule) => schedule.id == scheduleId);
     _storage?.saveSchedules(_schedules);
@@ -267,7 +282,7 @@ class MedicationStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Synchronizes overdue pending reminders and updates their status to missed if they are overdue.
+  // Checks overdue reminders and automatically marks them as missed.
   void syncOverduePendingReminders({DateTime? now}) {
     final currentTime = now ?? DateTime.now();
     var changed = false;
@@ -316,6 +331,7 @@ class MedicationStore extends ChangeNotifier {
     }
   }
 
+  // Saves medications, schedules, and histories together.
   void _saveMedicationData() {
     _storage?.saveMedications(_medications);
     _storage?.saveSchedules(_schedules);
@@ -332,6 +348,7 @@ class MedicationStore extends ChangeNotifier {
         .toList();
   }
 
+  // Schedules the notification for a reminder if the medication is active.
   void _scheduleNotification(MedicationSchedule schedule) {
     final medication = _findCurrentMedication(schedule.medicationId);
     if (medication == null || !medication.isActive) {
@@ -349,6 +366,7 @@ class MedicationStore extends ChangeNotifier {
     );
   }
 
+  // Restores reminder notifications after app restart or relogin.
   void _restorePendingNotifications() {
     final now = DateTime.now();
     var changed = false;
@@ -376,6 +394,7 @@ class MedicationStore extends ChangeNotifier {
     }
   }
 
+  // Resets daily reminders back to pending when a new day starts.
   bool _syncDailyReminders(DateTime now) {
     var changed = false;
 
@@ -420,6 +439,7 @@ class MedicationStore extends ChangeNotifier {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
+  // Handles notification button actions and maps them to schedule status changes.
   void _handleNotificationAction(NotificationAction action) {
     final status = switch (action.action) {
       'taken' => MedicationStatus.taken,
@@ -435,6 +455,7 @@ class MedicationStore extends ChangeNotifier {
     updateScheduleStatus(action.scheduleId, status);
   }
 
+  // Calculates the next reminder time from a 24-hour minute value.
   DateTime _nextReminderTime(int timeInMinutes, [DateTime? reference]) {
     final now = reference ?? DateTime.now();
     final hour = timeInMinutes ~/ 60;
@@ -448,6 +469,7 @@ class MedicationStore extends ChangeNotifier {
     return scheduled;
   }
 
+  // Adds a history record when the user takes, postpones, or misses a reminder.
   void _addHistory(MedicationSchedule schedule, MedicationStatus status) {
     final medication = _findCurrentMedication(schedule.medicationId);
     if (medication == null) {
@@ -469,6 +491,7 @@ class MedicationStore extends ChangeNotifier {
     );
   }
 
+  // Finds the medication that belongs to the current user.
   Medication? _findCurrentMedication(String id) {
     final patientId = _currentPatientId;
     if (patientId == null) {

@@ -1,3 +1,5 @@
+// A widget that scales down when pressed, and returns to normal when released.
+
 import 'package:flutter/material.dart';
 
 class PressableScale extends StatefulWidget {

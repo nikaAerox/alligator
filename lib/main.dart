@@ -1,3 +1,6 @@
+// Entry point of the app.
+// Initializes storage, notifications, and theme settings before launching MediCare.
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

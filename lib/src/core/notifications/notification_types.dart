@@ -1,3 +1,5 @@
+// Defines the notification action data used to pass reminder responses from the notification system back to the app state.
+
 class NotificationAction {
   const NotificationAction({
     required this.scheduleId,

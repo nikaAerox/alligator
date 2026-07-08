@@ -1,3 +1,6 @@
+// Stores the user account information
+// For saving and loading patient data
+
 class Patient {
   const Patient({
     required this.id,

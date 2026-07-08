@@ -1,3 +1,5 @@
+// Profile page for updating account details, toggling theme, and logging out.
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -19,6 +21,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late final TextEditingController _emailController;
   late final TextEditingController _passwordController;
 
+  // Loads the current user data into the profile form.
   @override
   void initState() {
     super.initState();
@@ -131,6 +134,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // Returns an error if a required field is empty.
   String? _required(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'Required';
@@ -138,6 +142,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return null;
   }
 
+  // Saves profile changes to the current account.
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -158,6 +163,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ).showSnackBar(SnackBar(content: Text(error ?? 'Profile updated')));
   }
 
+  // Logs out the current user and returns to the login screen.
   Future<void> _logout() async {
     await context.read<AuthStore>().logout();
     if (!mounted) {
