@@ -29,7 +29,7 @@ Several main features:
 ## Installation Guide
 To install MediCare on your phone:
 
-1. Copy the MediCare APK file to your Android phone.
+1. Copy the MediCare APK file **"app-release.apk"** to your Android phone.
 2. Open the APK file from your file manager.
 3. If your phone asks for permission, allow **Install unknown apps**.
 4. Tap **Install**
