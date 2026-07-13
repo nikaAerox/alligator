@@ -33,7 +33,7 @@ To install MediCare on your phone:
 2. Open the APK file from your file manager.
 3. If your phone asks for permission, allow **Install unknown apps**.
 4. Tap **Install**
-5. If a block notification appears, tap **Install anyway**, go to **More details** then tap **Install anyway**.
+5. If a block notification appears, tap **Install anyway**, go to **More details** then tap **Install anyway** again.
 6. Wait until the installation finishes.
 7. Open the MediCare app from your phone menu.
 
