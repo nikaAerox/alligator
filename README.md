@@ -32,9 +32,10 @@ To install MediCare on your phone:
 1. Copy the MediCare APK file to your Android phone.
 2. Open the APK file from your file manager.
 3. If your phone asks for permission, allow **Install unknown apps**.
-4. Tap **Install**.
-5. Wait until the installation finishes.
-6. Open the MediCare app from your phone menu.
+4. Tap **Install**
+5. If a block notification appears, tap **Install anyway**, go to **More details** then tap **Install anyway**.
+6. Wait until the installation finishes.
+7. Open the MediCare app from your phone menu.
 
 ---
 
@@ -200,7 +201,8 @@ Users can respond to a reminder using:
 - **Taken**
 - **Postponed**
 
-If no action is taken for a while, the reminder may become **Missed** automatically.
+The reminder will reappear when **Postponed** (1 minutes after for this project)
+If no action is taken for a while, the reminder may become **Missed** automatically. (1 minutes after for this project)
 
 ---
 
