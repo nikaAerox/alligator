@@ -201,8 +201,8 @@ Users can respond to a reminder using:
 - **Taken**
 - **Postponed**
 
-The reminder will reappear when **Postponed** (1 minutes after for this project)
-If no action is taken for a while, the reminder may become **Missed** automatically. (1 minutes after for this project)
+The reminder will reappear when **Postponed** (1 minutes after for this project).
+ If no action is taken for a while, the reminder may become **Missed** automatically. (1 minutes after for this project)
 
 ---
 
